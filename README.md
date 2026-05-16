@@ -35,7 +35,7 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins with support for
 1. Setup build.gradle.kts:
 ```kotlin
 plugins {
-    id("io.github.drownek.paperwright") version "1.3.1"
+    id("io.github.drownek.paperwright") version "1.3.2"
 }
 
 paperwright {

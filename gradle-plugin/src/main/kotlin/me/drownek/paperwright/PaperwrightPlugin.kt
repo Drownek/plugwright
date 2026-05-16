@@ -136,7 +136,7 @@ class PaperwrightPlugin : Plugin<Project> {
                             "build": "tsc"
                           },
                           "dependencies": {
-                            "@drownek/paperwright": "^1.3.1"
+                            "@drownek/paperwright": "^1.3.2"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",

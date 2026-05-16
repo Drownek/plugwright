@@ -15,7 +15,7 @@ Add the plugin to your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("io.github.drownek.paperwright") version "1.3.1"
+    id("io.github.drownek.paperwright") version "1.3.2"
 }
 
 paperwright {
