@@ -5,9 +5,6 @@
   "type": "module",
   "main": "dist/runner.js",
   "types": "dist/runner.d.ts",
-  "bin": {
-    "paperwright": "./dist/cli.js"
-  },
   "scripts": {
     "build": "rimraf dist && tsc",
     "prepublishOnly": "npm run build",
