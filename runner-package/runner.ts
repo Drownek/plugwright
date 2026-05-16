@@ -284,10 +284,15 @@ export async function runTestSession(): Promise<void> {
                         }, timeoutMs);
                     });
 
-                    await Promise.race([
-                        testCase.fn({ player, server, createPlayer, signal: abortController.signal }).finally(() => clearTimeout(timeoutHandle)),
-                        timeoutPromise
-                    ]);
+                    // The test fn promise may still be running after a timeout wins the race
+                    // (e.g. an awaited bot call rejects once disconnectAllBots() runs in finally).
+                    // Attach a no-op catch so that late rejection doesn't surface as an
+                    // unhandled promise rejection and crash the runner.
+                    const fnPromise = testCase.fn({ player, server, createPlayer, signal: abortController.signal })
+                        .finally(() => clearTimeout(timeoutHandle));
+                    fnPromise.catch(() => { /* swallowed: surfaced via Promise.race below */ });
+
+                    await Promise.race([fnPromise, timeoutPromise]);
 
                     const durationMs = Date.now() - testStartTime;
                     console.log(`    ${pc.green(pc.bold('PASSED'))} ${pc.dim(`(${formatDuration(durationMs)})`)}\n`);
