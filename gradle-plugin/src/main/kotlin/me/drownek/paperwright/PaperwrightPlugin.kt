@@ -140,7 +140,6 @@ class PaperwrightPlugin : Plugin<Project> {
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",
-                            "mineflayer": "^4.0.0",
                             "typescript": "^5.7.3"
                           }
                         }
