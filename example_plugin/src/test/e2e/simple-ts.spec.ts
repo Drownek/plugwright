@@ -1,4 +1,4 @@
-import {expect, test} from '@drownek/paper-e2e-runner';
+import {expect, test} from '@drownek/paperwright';
 
 test('command permission works', async ({ player, server }) => {
   player.chat('/example gui-settings');

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, test, expect } from "@drownek/paper-e2e-runner";
+import { afterEach, beforeEach, describe, test, expect } from "@drownek/paperwright";
 
 const executionLog: string[] = [];
 

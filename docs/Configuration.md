@@ -24,7 +24,7 @@ Complete reference for Gradle plugin configuration options.
 In your `build.gradle.kts`:
 
 ```kotlin
-e2e {
+paperwright {
     minecraftVersion.set("1.19.4")
     runDir.set("run")
     testsDir.set(file("src/test/e2e"))
@@ -94,7 +94,7 @@ acceptEula.set(true)
 **Required:** No  
 **Default:** `listOf("server.jar", "cache", "libraries")`
 
-Configures which files or folders in the `runDir` should **not** be deleted when the `cleanE2E` task runs. This is useful for preserving the server JAR, dependency caches, or other persistent data between test runs.
+Configures which files or folders in the `runDir` should **not** be deleted when the `paperwrightClean` task runs. This is useful for preserving the server JAR, dependency caches, or other persistent data between test runs.
 
 By default, the cleanup preserves:
 - `server.jar` - The Paper server executable
@@ -118,7 +118,7 @@ cleanExcludePatterns.set(listOf(
 **Required:** No  
 **Default:** `false`
 
-Whether to use only externally downloaded plugins instead of building the project plugin. When true, the `testE2E` task will not depend on jar/shadowJar/reobfJar tasks. Useful when running E2E tests with plugins downloaded from external sources only.
+Whether to use only externally downloaded plugins instead of building the project plugin. When true, the `paperwrightTest` task will not depend on jar/shadowJar/reobfJar tasks. Useful when running E2E tests with plugins downloaded from external sources only.
 
 ```kotlin
 useExternalPluginsOnly.set(true)
@@ -132,7 +132,7 @@ useExternalPluginsOnly.set(true)
 Download external plugins (like dependencies) before starting the server.
 
 ```kotlin
-e2e {
+paperwright {
     downloadPlugins {
         url("https://url/to/plugin.jar")
     }
@@ -147,7 +147,7 @@ e2e {
 Stage files into the run directory before the server starts. You can provide inline text content or copy from an existing local file. Paths are relative to the run directory.
 
 ```kotlin
-e2e {
+paperwright {
     writeFiles {
         // inline text content
         file("plugins/SomePlugin/config.yml", """
@@ -163,7 +163,7 @@ e2e {
 ## Complete Example
 
 ```kotlin
-e2e {
+paperwright {
     // Server configuration
     minecraftVersion.set("1.19.4")
     runDir.set("run")

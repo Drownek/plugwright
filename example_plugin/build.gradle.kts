@@ -2,10 +2,10 @@ plugins {
     `java-library`
     id("de.eldoria.plugin-yml.bukkit") version "0.8.0"
     id("com.gradleup.shadow") version "9.0.0-beta12"
-    id("io.github.drownek.paper-e2e") version "1.3.1"
+    id("io.github.drownek.paperwright") version "1.3.1"
 }
 
-e2e {
+paperwright {
     minecraftVersion.set("1.19.4")
     acceptEula.set(true)
     testsDir.set(file("src/test/e2e"))

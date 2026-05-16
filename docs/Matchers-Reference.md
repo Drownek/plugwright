@@ -319,7 +319,7 @@ await expect(player).not.toContainItem('bedrock');
 ## Complete Example
 
 ```javascript
-import { test, expect } from '@drownek/paper-e2e-runner';
+import { test, expect } from '@drownek/paperwright';
 
 test('comprehensive test example', async ({ player, server }) => {
   // Minecraft-specific assertions

@@ -1,6 +1,6 @@
-# Paper E2E Test Framework Wiki
+# Paperwright Test Framework Wiki
 
-Welcome to the Paper E2E Test Framework documentation!
+Welcome to the Paperwright Test Framework documentation!
 
 ## Getting Started
 

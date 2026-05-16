@@ -1,4 +1,4 @@
-package me.drownek.papere2e
+package me.drownek.paperwright
 
 import org.gradle.api.logging.Logger
 import java.util.Properties
@@ -6,7 +6,7 @@ import java.util.Properties
 internal object Banner {
     fun pluginVersion(): String {
         return try {
-            Banner::class.java.getResourceAsStream("/paper-e2e-version.properties")?.use { stream ->
+            Banner::class.java.getResourceAsStream("/paperwright-version.properties")?.use { stream ->
                 val props = Properties()
                 props.load(stream)
                 props.getProperty("version", "unknown")
@@ -32,7 +32,7 @@ internal object Banner {
 
     fun print(logger: Logger) {
         val version = pluginVersion()
-        val title = ansiGradient("paper-e2e", Triple(0x5e, 0xea, 0xd4), Triple(0xc0, 0x82, 0xff))
+        val title = ansiGradient("paperwright", Triple(0x5e, 0xea, 0xd4), Triple(0xc0, 0x82, 0xff))
         val dim = "\u001B[2m"
         val reset = "\u001B[0m"
         val bold = "\u001B[1m"

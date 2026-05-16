@@ -1,17 +1,17 @@
-# @drownek/paper-e2e-runner
+# @drownek/paperwright
 
 End-to-end testing runner for Paper/Spigot Minecraft plugins.
 
 ## Installation
 
 ```bash
-npm install @drownek/paper-e2e-runner
+npm install @drownek/paperwright
 ```
 
 ## Quick Start
 
 ```javascript
-import { test, expect } from '@drownek/paper-e2e-runner';
+import { test, expect } from '@drownek/paperwright';
 
 test('player can join server', async ({ player }) => {
   player.chat('/help');
@@ -35,7 +35,7 @@ test('player can interact with GUI', async ({ player }) => {
 
 ## Documentation
 
-Full documentation is available in the [GitHub repository Wiki](https://github.com/Drownek/paper-e2e-test/wiki).
+Full documentation is available in the [GitHub repository Wiki](https://github.com/Drownek/paperwright/wiki).
 
 ## License
 

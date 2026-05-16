@@ -15,10 +15,10 @@ Add the plugin to your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("io.github.drownek.paper-e2e") version "1.3.1"
+    id("io.github.drownek.paperwright") version "1.3.1"
 }
 
-e2e {
+paperwright {
     minecraftVersion.set("1.19.4")
     runDir.set("run")
     testsDir.set(file("src/test/e2e"))
@@ -33,7 +33,7 @@ e2e {
 To automatically scaffold your tests directory, `package.json`, `tsconfig.json`, and an example test, run:
 
 ```bash
-./gradlew initE2E
+./gradlew paperwrightInit
 ```
 
 This command will prompt you for the test directory location (defaulting to `src/test/e2e`), set up TypeScript, install dependencies, and generate an `example.spec.ts` file so you can get started immediately.
@@ -41,7 +41,7 @@ This command will prompt you for the test directory location (defaulting to `src
 ### 3. Run Tests
 
 ```bash
-./gradlew testE2E
+./gradlew paperwrightTest
 ```
 
 ## What Happens During Test Execution
@@ -82,9 +82,9 @@ your-plugin/
 │       └── node_modules/
 ├── build.gradle.kts
 └── run/                        # Created automatically
-    ├── server.jar              # Preserved by cleanE2E
-    ├── cache/                  # Preserved by cleanE2E
-    ├── libraries/              # Preserved by cleanE2E
+    ├── server.jar              # Preserved by paperwrightClean
+    ├── cache/                  # Preserved by paperwrightClean
+    ├── libraries/              # Preserved by paperwrightClean
     ├── plugins/                # Cleaned before each run
     │   └── your-plugin.jar
     ├── world/                  # Cleaned before each run

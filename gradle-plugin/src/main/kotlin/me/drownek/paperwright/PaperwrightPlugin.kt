@@ -1,4 +1,4 @@
-package me.drownek.papere2e
+package me.drownek.paperwright
 
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -6,12 +6,12 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.jvm.toolchain.JavaToolchainService
 
-class PaperE2EPlugin : Plugin<Project> {
+class PaperwrightPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val extension = project.extensions.create("e2e", PaperE2EExtension::class.java, project)
+        val extension = project.extensions.create("paperwright", PaperwrightExtension::class.java, project)
 
-        // Register cleanE2E task
-        val cleanE2E = project.tasks.register("cleanE2E") {
+        // Register paperwrightClean task
+        val paperwrightClean = project.tasks.register("paperwrightClean") {
             group = "verification"
             description = "Wipes the test server data for a clean slate."
 
@@ -56,9 +56,9 @@ class PaperE2EPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("testE2E", TestE2ETask::class.java) {
+        project.tasks.register("paperwrightTest", PaperwrightTestTask::class.java) {
             // Ensure clean runs before test
-            dependsOn(cleanE2E)
+            dependsOn(paperwrightClean)
 
             testsDir.set(extension.testsDir)
             minecraftVersion.set(extension.minecraftVersion)
@@ -100,12 +100,12 @@ class PaperE2EPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("initE2E") {
+        project.tasks.register("paperwrightInit") {
             group = "verification"
-            description = "Interactively initializes a paper-e2e-test environment with required configs and an initial test file."
+            description = "Interactively initializes a paperwright-test environment with required configs and an initial test file."
             doLast {
                 val defaultDir = "src/test/e2e"
-                val propertyDir = project.findProperty("e2eDir") as? String
+                val propertyDir = project.findProperty("paperwrightDir") as? String
 
                 val inputDir = propertyDir ?: run {
                     project.logger.lifecycle("Enter the test directory location [default: $defaultDir]:")
@@ -133,11 +133,10 @@ class PaperE2EPlugin : Plugin<Project> {
                         {
                           "type": "module",
                           "scripts": {
-                            "build": "tsc",
-                            "test": "tsc && paper-e2e-runner"
+                            "build": "tsc"
                           },
                           "dependencies": {
-                            "@drownek/paper-e2e-runner": "^1.3.1"
+                            "@drownek/paperwright": "^1.3.1"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",
@@ -187,7 +186,7 @@ class PaperE2EPlugin : Plugin<Project> {
                 if (!testFile.exists()) {
                     testFile.writeText(
                         """
-                        import {expect, test} from '@drownek/paper-e2e-runner';
+                        import {expect, test} from '@drownek/paperwright';
                         
                         test('help displays message', async ({ player, server }) => {
                           player.chat('/help');
@@ -213,7 +212,7 @@ class PaperE2EPlugin : Plugin<Project> {
                         throw GradleException("EXEC ERROR: 'npm install' failed with exit code ${execResult.exitValue}.")
                     }
                     project.logger.lifecycle("Dependencies installed successfully. 🎉")
-                    project.logger.lifecycle("\nYou're all set! Run tests with: ./gradlew testE2E")
+                    project.logger.lifecycle("\nYou're all set! Run tests with: ./gradlew paperwrightTest")
                 } catch (e: Exception) {
                     if (e is GradleException) throw e
                     throw GradleException("EXEC FATAL: Failed to launch npm process. Original error: ${e.message}", e)
@@ -225,13 +224,13 @@ class PaperE2EPlugin : Plugin<Project> {
         // when one of our E2E tasks is actually in the task graph.
         project.gradle.taskGraph.whenReady {
             val ours = allTasks.any { task ->
-                task.project === project && (task.name == "testE2E" || task.name == "cleanE2E" || task.name == "initE2E")
+                task.project === project && (task.name == "paperwrightTest" || task.name == "paperwrightClean" || task.name == "paperwrightInit")
             }
             if (ours) Banner.print(project.logger)
         }
 
         project.afterEvaluate {
-            val testTask = project.tasks.named("testE2E", TestE2ETask::class.java).get()
+            val testTask = project.tasks.named("paperwrightTest", PaperwrightTestTask::class.java).get()
 
             // Only set up plugin jar dependency if not using external plugins only
             if (!extension.useExternalPluginsOnly.get()) {

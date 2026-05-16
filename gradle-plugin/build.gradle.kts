@@ -19,15 +19,15 @@ dependencies {
 }
 
 gradlePlugin {
-    website.set("https://github.com/drownek/paper-e2e-test")
-    vcsUrl.set("https://github.com/drownek/paper-e2e-test.git")
+    website.set("https://github.com/drownek/paperwright")
+    vcsUrl.set("https://github.com/drownek/paperwright.git")
     plugins {
-        create("paperE2E") {
-            id = "io.github.drownek.paper-e2e"
-            displayName = "Paper E2E Testing Plugin"
+        create("paperwright") {
+            id = "io.github.drownek.paperwright"
+            displayName = "Paperwright Testing Plugin"
             description = "End-to-end testing framework for Paper/Spigot Minecraft plugins"
             tags.set(listOf("minecraft", "paper", "spigot", "testing", "e2e"))
-            implementationClass = "me.drownek.papere2e.PaperE2EPlugin"
+            implementationClass = "me.drownek.paperwright.PaperwrightPlugin"
         }
     }
 }
@@ -39,7 +39,7 @@ java {
 }
 
 val generateVersionResource = tasks.register("generateVersionResource") {
-    val outFile = layout.buildDirectory.file("generated/version-resource/paper-e2e-version.properties")
+    val outFile = layout.buildDirectory.file("generated/version-resource/paperwright-version.properties")
     inputs.property("version", projectVersion)
     outputs.file(outFile)
     doLast {

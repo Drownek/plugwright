@@ -36,5 +36,5 @@ jobs:
         working-directory: ./example_plugin
 
       - name: Run E2E Tests
-        run: ./gradlew testE2E
+        run: ./gradlew paperwrightTest
         working-directory: ./example_plugin

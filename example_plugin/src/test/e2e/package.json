@@ -4,7 +4,7 @@
     "build": "rimraf dist && tsc"
   },
   "dependencies": {
-    "@drownek/paper-e2e-runner": "file:../../../../runner-package"
+    "@drownek/paperwright": "file:../../../../runner-package"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

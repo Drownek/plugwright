@@ -1,4 +1,4 @@
-import { expect, test } from '@drownek/paper-e2e-runner';
+import { expect, test } from '@drownek/paperwright';
 
 test('multi-bot teleportation', async ({ player, createPlayer }) => {
     await player.makeOp()

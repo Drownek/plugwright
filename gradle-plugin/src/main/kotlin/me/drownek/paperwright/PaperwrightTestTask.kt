@@ -1,4 +1,4 @@
-package me.drownek.papere2e
+package me.drownek.paperwright
 
 import com.google.gson.JsonParser
 import org.gradle.api.DefaultTask
@@ -18,7 +18,7 @@ import java.time.Duration
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.DumperOptions
 
-abstract class TestE2ETask : DefaultTask() {
+abstract class PaperwrightTestTask : DefaultTask() {
 
     @get:InputDirectory
     @get:Optional
@@ -60,7 +60,7 @@ abstract class TestE2ETask : DefaultTask() {
 
     @get:Input
     @get:Optional
-    abstract val runDirFiles: ListProperty<PaperE2EExtension.RunDirFile>
+    abstract val runDirFiles: ListProperty<PaperwrightExtension.RunDirFile>
 
     init {
         group = "verification"
@@ -69,7 +69,7 @@ abstract class TestE2ETask : DefaultTask() {
 
     @TaskAction
     fun runTests() {
-        // Banner is printed by the cleanE2E task that runs before this one
+        // Banner is printed by the paperwrightClean task that runs before this one
         // (or by the Node runner in standalone mode). Avoid duplicating here.
         val serverJar = serverJarPath.get()
         val serverDirectory = serverDir.get()
@@ -248,7 +248,7 @@ abstract class TestE2ETask : DefaultTask() {
             "JVM_ARGS" to jvmArgsString,
             "MC_VERSION" to mcVersion,
             // The Gradle plugin already printed its banner; don't duplicate it.
-            "PAPER_E2E_NO_BANNER" to "1"
+            "PAPERWRIGHT_NO_BANNER" to "1"
         )
 
         if (testFiles.isPresent) {
@@ -265,7 +265,7 @@ abstract class TestE2ETask : DefaultTask() {
 
         runCommand(
             userTestsDirectory, 
-            "node", "node_modules/@drownek/paper-e2e-runner/dist/cli.js",
+            "node", "node_modules/@drownek/paperwright/dist/cli.js",
             env = envMap
         )
         
@@ -471,7 +471,7 @@ abstract class TestE2ETask : DefaultTask() {
         // If Gradle/this JVM is killed (e.g. IDE "Stop" button), make sure the
         // spawned process tree (node -> java paper server) dies with us.
         // Without this, the Paper server keeps running and holds run/logs/latest.log,
-        // which makes the next cleanE2E fail on Windows with "Unable to delete directory".
+        // which makes the next paperwrightClean fail on Windows with "Unable to delete directory".
         val shutdownHook = Thread {
             if (process.isAlive) killProcessTree(process)
         }
@@ -538,7 +538,7 @@ abstract class TestE2ETask : DefaultTask() {
             }
             handle.destroyForcibly()
             // Wait briefly so Windows releases file handles (e.g. latest.log)
-            // before the next cleanE2E runs.
+            // before the next paperwrightClean runs.
             process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
             descendants.forEach {
                 try { it.onExit().get(2, java.util.concurrent.TimeUnit.SECONDS) } catch (_: Throwable) {}

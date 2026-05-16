@@ -1,12 +1,12 @@
 {
-  "name": "@drownek/paper-e2e-runner",
+  "name": "@drownek/paperwright",
   "version": "1.3.2-dev.0",
   "description": "End-to-end testing framework for Paper/Spigot Minecraft plugins",
   "type": "module",
   "main": "dist/runner.js",
   "types": "dist/runner.d.ts",
   "bin": {
-    "paper-e2e-runner": "./dist/cli.js"
+    "paperwright": "./dist/cli.js"
   },
   "scripts": {
     "build": "rimraf dist && tsc",
@@ -29,12 +29,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/drownek/paper-e2e-test.git",
+    "url": "https://github.com/drownek/paperwright.git",
     "directory": "runner-package"
   },
-  "homepage": "https://github.com/drownek/paper-e2e-test#readme",
+  "homepage": "https://github.com/drownek/paperwright#readme",
   "bugs": {
-    "url": "https://github.com/drownek/paper-e2e-test/issues"
+    "url": "https://github.com/drownek/paperwright/issues"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",

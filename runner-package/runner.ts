@@ -32,10 +32,10 @@ async function readRunnerVersion(): Promise<string> {
 }
 
 async function printBanner(): Promise<void> {
-    if (process.env.PAPER_E2E_NO_BANNER === '1') return;
+    if (process.env.PAPERWRIGHT_NO_BANNER === '1') return;
     const version = await readRunnerVersion();
     // teal -> purple gradient
-    const title = gradientText('paper-e2e', [0x5e, 0xea, 0xd4], [0xc0, 0x82, 0xff]);
+    const title = gradientText('paperwright', [0x5e, 0xea, 0xd4], [0xc0, 0x82, 0xff]);
     const rule = pc.dim('─'.repeat(60));
     console.log('');
     console.log(`  ${pc.bold(title)}  ${pc.dim('v' + version + '  -  end-to-end testing for paper plugins')}`);
@@ -143,7 +143,7 @@ export async function runTestSession(): Promise<void> {
 
     // Ensure the Paper server dies if our runner is killed (e.g. Gradle task
     // cancelled from the IDE). Otherwise the java.exe keeps running and holds
-    // run/logs/latest.log open, breaking the next cleanE2E on Windows.
+    // run/logs/latest.log open, breaking the next paperwrightClean on Windows.
     const killServerTree = (): void => {
         if (!serverProcess.pid || serverProcess.killed || serverProcess.exitCode !== null) return;
         try {

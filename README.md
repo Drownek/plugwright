@@ -1,7 +1,7 @@
-# Paper E2E Test Framework
+# Paperwright
 
-[![npm version](https://badge.fury.io/js/%40drownek%2Fpaper-e2e-runner.svg)](https://www.npmjs.com/package/@drownek/paper-e2e-runner)
-[![Downloads](https://img.shields.io/npm/dm/@drownek/paper-e2e-runner.svg)](https://www.npmjs.com/package/@drownek/paper-e2e-runner)
+[![npm version](https://badge.fury.io/js/%40drownek%2Fpaperwright.svg)](https://www.npmjs.com/package/@drownek/paperwright)
+[![Downloads](https://img.shields.io/npm/dm/@drownek/paperwright.svg)](https://www.npmjs.com/package/@drownek/paperwright)
 
 End-to-end testing framework for Paper/Spigot Minecraft plugins with support for both JavaScript and TypeScript.
 
@@ -35,20 +35,20 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins with support for
 1. Setup build.gradle.kts:
 ```kotlin
 plugins {
-    id("io.github.drownek.paper-e2e") version "1.3.1"
+    id("io.github.drownek.paperwright") version "1.3.1"
 }
 
-e2e {
+paperwright {
     minecraftVersion.set("1.19.4")
     runDir.set("run")
     testsDir.set(file("src/test/e2e"))
     acceptEula.set(true)
 }
 ```
-2. Init tests folder: `./gradlew initE2E`
-3. Run tests: `./gradlew testE2E`
+2. Init tests folder: `./gradlew paperwrightInit`
+3. Run tests: `./gradlew paperwrightTest`
 
-Please refer to the [Getting Started](https://github.com/Drownek/paper-e2e-test/wiki/Getting-Started) guide for detailed setup instructions.
+Please refer to the [Getting Started](https://github.com/Drownek/paperwright/wiki/Getting-Started) guide for detailed setup instructions.
 
 ## Documentation
 

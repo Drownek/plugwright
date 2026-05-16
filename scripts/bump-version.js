@@ -38,16 +38,16 @@ function bumpVersionFiles(newVersion) {
     for (const file of gradleFiles) {
         replaceRegexInFile(
             file,
-            /id\("io\.github\.drownek\.paper-e2e"\) version "[^"]+"/g,
-            `id("io.github.drownek.paper-e2e") version "${newVersion}"`
+            /id\("io\.github\.drownek\.paperwright"\) version "[^"]+"/g,
+            `id("io.github.drownek.paperwright") version "${newVersion}"`
         );
     }
 
-    // Matches any version after the package name, e.g., "@drownek/paper-e2e-runner": "^1.x.x"
+    // Matches any version after the package name, e.g., "@drownek/paperwright": "^1.x.x"
     replaceRegexInFile(
-        "gradle-plugin/src/main/kotlin/me/drownek/papere2e/PaperE2EPlugin.kt",
-        /"@drownek\/paper-e2e-runner": "\^[^"]+"/g,
-        `"@drownek/paper-e2e-runner": "^${newVersion}"`
+        "gradle-plugin/src/main/kotlin/me/drownek/paperwright/PaperwrightPlugin.kt",
+        /"@drownek\/paperwright": "\^[^"]+"/g,
+        `"@drownek/paperwright": "^${newVersion}"`
     );
 }
 
@@ -100,7 +100,7 @@ async function main() {
             "README.md",
             "docs/Getting-Started.md",
             "example_plugin/build.gradle.kts",
-            "gradle-plugin/src/main/kotlin/me/drownek/papere2e/PaperE2EPlugin.kt",
+            "gradle-plugin/src/main/kotlin/me/drownek/paperwright/PaperwrightPlugin.kt",
         );
     }
 
