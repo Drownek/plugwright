@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@drownek/paperwright)](https://www.npmjs.com/package/@drownek/paperwright)
 [![Downloads](https://img.shields.io/npm/dm/@drownek/paperwright.svg)](https://www.npmjs.com/package/@drownek/paperwright)
+[![CI](https://github.com/Drownek/paperwright/actions/workflows/ci.yml/badge.svg)](https://github.com/Drownek/paperwright/actions/workflows/ci.yml)
 
 End-to-end testing framework for Paper/Spigot Minecraft plugins with support for both JavaScript and TypeScript.
 
