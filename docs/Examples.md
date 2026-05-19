@@ -185,7 +185,7 @@ test('cannot join full arena', async ({ player, server }) => {
 ## Event-Based Testing
 
 ```javascript
-import { test, expect, sleep } from '@drownek/paperwright';
+import { test, expect } from '@drownek/paperwright';
 
 test('player receives item on first join', async ({ player }) => {
   // The matcher auto-retries for 5s, so no fixed sleep is needed here
