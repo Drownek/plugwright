@@ -9,9 +9,9 @@ export function formatDuration(ms: number): string {
 }
 
 export function printTestSummary(testResults: TestResult[]): number {
-    console.log(`\n${pc.bold('═'.repeat(40))}`);
+    console.log(`\n${pc.bold('='.repeat(40))}`);
     console.log(pc.bold('  Test Summary'));
-    console.log(pc.bold('═'.repeat(40)));
+    console.log(pc.bold('='.repeat(40)));
 
     const passed = testResults.filter(r => r.passed);
     const failed = testResults.filter(r => !r.passed);
@@ -31,7 +31,7 @@ export function printTestSummary(testResults: TestResult[]): number {
     const testWidth = Math.max(testCol.length, ...testResults.map(r => r.testName.length));
 
     const header = `  ${pc.dim(`${statusCol.padEnd(statusWidth)}  ${testCol.padEnd(testWidth)}  ${durationCol.padStart(durationWidth)}`)}`;
-    const separator = `  ${pc.dim(`${'─'.repeat(statusWidth)}  ${'─'.repeat(testWidth)}  ${'─'.repeat(durationWidth)}`)}`;
+    const separator = `  ${pc.dim(`${'-'.repeat(statusWidth)}  ${'-'.repeat(testWidth)}  ${'-'.repeat(durationWidth)}`)}`;
 
     console.log(`\n${header}`);
     console.log(separator);
@@ -53,7 +53,7 @@ export function printTestSummary(testResults: TestResult[]): number {
         console.log(`\n${pc.red(pc.bold('Failed Tests:'))}\n`);
 
         for (const result of failed) {
-            console.log(`  ${pc.red(`✗ ${result.testName}`)}`);
+            console.log(`  ${pc.red(`x ${result.testName}`)}`);
 
             if (result.error) {
                 console.log(`    ${pc.red(result.error.message)}`);

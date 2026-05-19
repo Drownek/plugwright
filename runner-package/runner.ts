@@ -36,7 +36,7 @@ async function printBanner(): Promise<void> {
     const version = await readRunnerVersion();
     // teal -> purple gradient
     const title = gradientText('paperwright', [0x5e, 0xea, 0xd4], [0xc0, 0x82, 0xff]);
-    const rule = pc.dim('─'.repeat(60));
+    const rule = pc.dim('-'.repeat(60));
     console.log('');
     console.log(`  ${pc.bold(title)}  ${pc.dim('v' + version + '  -  end-to-end testing for paper plugins')}`);
     console.log(`  ${rule}`);
