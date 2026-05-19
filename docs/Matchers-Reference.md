@@ -8,6 +8,8 @@ Complete reference for all available assertion matchers.
   - [`toHaveReceivedMessage(message, options?)`](#tohavereceivedmessagemessage-options)
   - [`toContainItem(itemName)`](#tocontainitemitemname)
   - [`toHaveLore(text, options?)`](#tohaveloretext-options)
+  - [`toBeNear(x, y, z, options?)`](#tobenearx-y-z-options)
+  - [`toBeNearXZ(x, z, options?)`](#tobenearxzx-z-options)
 - [Basic Equality](#basic-equality)
   - [`toBe(value)`](#tobevalue)
   - [`toEqual(value)`](#toequalvalue)
@@ -34,6 +36,7 @@ Complete reference for all available assertion matchers.
 - [Types](#types)
   - [`toBeInstanceOf(class)`](#tobeinstanceofclass)
 - [Negation](#negation)
+- [Polling Arbitrary Values with `expect.poll`](#polling-arbitrary-values-with-expectpoll)
 - [Complete Example](#complete-example)
 - [Tips](#tips)
 - [Error Messages](#error-messages)
@@ -106,6 +109,35 @@ await expect(item).not.toHaveLore('error');
 - `text` (string) - Text that should appear in lore
 - `options.timeout` (number) - Max wait time in ms (default: 5000)
 - `options.pollingRate` (number) - Check interval in ms (default: 100)
+
+### `toBeNear(x, y, z, options?)`
+
+Waits for the player to be within `tolerance` blocks of the given coordinates.
+Auto-retries until the position matches or the timeout expires.
+
+```javascript
+// Pass `undefined` for an axis you don't care about
+await expect(player).toBeNear(100, 64, 100);
+await expect(player).toBeNear(100, undefined, 100, { tolerance: 2 });
+
+// Negation
+await expect(player).not.toBeNear(0, 0, 0);
+```
+
+**Parameters:**
+- `x` (number) - Target X
+- `y` (number | undefined) - Target Y, or `undefined` to ignore the Y axis
+- `z` (number) - Target Z
+- `options.tolerance` (number) - Allowed deviation in blocks per axis (default: 1)
+- `options.timeout` (number) - Max wait time in ms (default: 5000)
+
+### `toBeNearXZ(x, z, options?)`
+
+Convenience wrapper around `toBeNear` that ignores the Y axis.
+
+```javascript
+await expect(player).toBeNearXZ(100, 100, { tolerance: 2 });
+```
 
 ## Basic Equality
 
@@ -315,6 +347,36 @@ expect(() => 'success').not.toThrow();
 await expect(player).not.toHaveReceivedMessage('Error');
 await expect(player).not.toContainItem('bedrock');
 ```
+
+## Polling Arbitrary Values with `expect.poll`
+
+Most matchers are synchronous (they evaluate the value once). For values
+that change over time — bot stats, server state, custom plugin data — wrap
+the accessor in `expect.poll(fn, options?)` to get an auto-retrying version
+of every regular matcher.
+
+```javascript
+import { test, expect } from '@drownek/paperwright';
+
+test('player health regenerates', async ({ player }) => {
+  // Synchronous matcher would only check once:
+  // expect(player.bot.health).toBe(20); // flaky!
+
+  // Polling matcher retries until the value matches or the timeout expires:
+  await expect.poll(() => player.bot.health).toBe(20);
+  await expect.poll(() => player.bot.entity.position.y, { timeout: 10_000 }).toBeGreaterThan(64);
+  await expect.poll(() => player.bot.entity.position).toMatchObject({ x: 100, z: 200 });
+});
+```
+
+**Options:**
+- `timeout` (number) - Max wait time in ms (default: 5000)
+- `interval` (number) - Poll interval in ms (default: 250)
+- `message` (string) - Custom error message on timeout
+
+Every matcher from the regular `expect()` is available on the result of
+`expect.poll()` (e.g. `.toBe`, `.toEqual`, `.toContain`, `.toMatchObject`,
+`.toHaveProperty`, ...), all returning a `Promise<void>` you must `await`.
 
 ## Complete Example
 
