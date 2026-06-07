@@ -246,9 +246,7 @@ abstract class PaperwrightTestTask : DefaultTask() {
             "SERVER_DIR" to serverDirectory.trim(),
             "JAVA_PATH" to javaPath,
             "JVM_ARGS" to jvmArgsString,
-            "MC_VERSION" to mcVersion,
-            // The Gradle plugin already printed its banner; don't duplicate it.
-            "PAPERWRIGHT_NO_BANNER" to "1"
+            "MC_VERSION" to mcVersion
         )
 
         if (testFiles.isPresent) {
