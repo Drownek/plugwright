@@ -1,4 +1,4 @@
-import { expect, sleep, test } from '@drownek/paperwright';
+import { expect, test } from '@drownek/paperwright';
 
 test('makeOp', async ({ player }) => {
     await player.makeOp();
