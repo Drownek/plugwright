@@ -38,7 +38,7 @@ internal object Banner {
         val bold = "\u001B[1m"
         logger.lifecycle("")
         logger.lifecycle("  $bold$title$reset  ${dim}v$version  -  end-to-end testing for paper plugins$reset")
-        logger.lifecycle("  $dim${"─".repeat(60)}$reset")
+        logger.lifecycle("  $dim${"-".repeat(60)}$reset")
         logger.lifecycle("")
     }
 }

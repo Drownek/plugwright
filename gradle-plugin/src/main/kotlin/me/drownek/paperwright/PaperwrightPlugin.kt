@@ -211,7 +211,7 @@ class PaperwrightPlugin : Plugin<Project> {
                     if (execResult.exitValue != 0) {
                         throw GradleException("EXEC ERROR: 'npm install' failed with exit code ${execResult.exitValue}.")
                     }
-                    project.logger.lifecycle("Dependencies installed successfully. 🎉")
+                    project.logger.lifecycle("Dependencies installed successfully.")
                     project.logger.lifecycle("\nYou're all set! Run tests with: ./gradlew paperwrightTest")
                 } catch (e: Exception) {
                     if (e is GradleException) throw e
