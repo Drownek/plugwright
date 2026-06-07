@@ -5,44 +5,6 @@ import { pathToFileURL } from 'url';
 import { randomUUID } from 'node:crypto';
 import { install as installSourceMapSupport } from 'source-map-support';
 import pc from 'picocolors';
-
-type RGB = [number, number, number];
-
-function gradientText(text: string, from: RGB, to: RGB): string {
-    const n = text.length;
-    let out = '';
-    for (let i = 0; i < n; i++) {
-        const t = n <= 1 ? 0 : i / (n - 1);
-        const r = Math.round(from[0] + (to[0] - from[0]) * t);
-        const g = Math.round(from[1] + (to[1] - from[1]) * t);
-        const b = Math.round(from[2] + (to[2] - from[2]) * t);
-        out += `\x1b[38;2;${r};${g};${b}m${text[i]}`;
-    }
-    return out + '\x1b[0m';
-}
-
-async function readRunnerVersion(): Promise<string> {
-    try {
-        const url = new URL('../package.json', import.meta.url);
-        const pkg = JSON.parse(await readFile(url, 'utf8'));
-        return pkg.version || 'unknown';
-    } catch {
-        return 'unknown';
-    }
-}
-
-async function printBanner(): Promise<void> {
-    if (process.env.PAPERWRIGHT_NO_BANNER === '1') return;
-    const version = await readRunnerVersion();
-    // teal -> purple gradient
-    const title = gradientText('paperwright', [0x5e, 0xea, 0xd4], [0xc0, 0x82, 0xff]);
-    const rule = pc.dim("-".repeat(60));
-    console.log('');
-    console.log(`  ${pc.bold(title)}  ${pc.dim('v' + version + '  -  end-to-end testing for paper plugins')}`);
-    console.log(`  ${rule}`);
-    console.log('');
-}
-
 import { ItemWrapper, GuiWrapper } from './lib/wrappers.js';
 import { PlayerWrapper } from './lib/player.js';
 import { ServerWrapper } from './lib/server.js';
@@ -126,8 +88,6 @@ export async function runTestSession(): Promise<void> {
     }
 
     let exitCode = 0;
-
-    await printBanner();
 
     console.log(`${pc.bold('Starting Paper server...')}`);
 
