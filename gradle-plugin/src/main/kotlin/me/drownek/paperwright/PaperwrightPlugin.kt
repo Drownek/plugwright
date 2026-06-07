@@ -133,14 +133,14 @@ class PaperwrightPlugin : Plugin<Project> {
                         {
                           "type": "module",
                           "scripts": {
-                            "build": "tsc"
+                            "build": "rimraf dist && tsc"
                           },
                           "dependencies": {
                             "@drownek/paperwright": "^1.3.2"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",
-                            "mineflayer": "^4.0.0",
+                            "rimraf": "^6.1.3",
                             "typescript": "^5.7.3"
                           }
                         }
