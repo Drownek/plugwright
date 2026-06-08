@@ -6,6 +6,8 @@
 
 End-to-end testing framework for Paper/Spigot Minecraft plugins with support for both JavaScript and TypeScript.
 
+<img width="1000" height="563" alt="Showcase" src="https://github.com/user-attachments/assets/6aa160b0-b419-4629-9824-36e109f9831b" />
+
 ## Features
 
 `🚀` **Fast & Simple Setup** – Start testing in minutes with automated server lifecycle management and Paper server downloads.
