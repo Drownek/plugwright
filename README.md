@@ -1,41 +1,35 @@
 # Paperwright
 
-[![npm version](https://img.shields.io/npm/v/@drownek/paperwright)](https://www.npmjs.com/package/@drownek/paperwright)
-[![Downloads](https://img.shields.io/npm/dm/@drownek/paperwright.svg)](https://www.npmjs.com/package/@drownek/paperwright)
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/io.github.drownek.paperwright?label=Gradle%20Plugin%20Portal)](https://plugins.gradle.org/plugin/io.github.drownek.paperwright)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/Drownek/paperwright/actions/workflows/ci.yml/badge.svg)](https://github.com/Drownek/paperwright/actions/workflows/ci.yml)
 
-End-to-end testing framework for Paper/Spigot Minecraft plugins with support for both JavaScript and TypeScript.
+End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaScript and TypeScript.
 
 <img width="1000" height="563" alt="Showcase" src="https://github.com/user-attachments/assets/6aa160b0-b419-4629-9824-36e109f9831b" />
 
 ## Features
 
-`🚀` **Fast & Simple Setup** – Start testing in minutes with automated server lifecycle management and Paper server downloads.
+`🚀` **Setup** – Automated server lifecycle management with Paper server downloads.
 
-`🎮` **Realistic Bot Testing** – Powered by Mineflayer for authentic player interaction.
+`🎮` **Bot Testing** – Powered by Mineflayer. Bots join, move, chat, and click GUIs like real players.
 
-`🎭` **Playwright-inspired API** – Familiar patterns using live handles and locators for intuitive scripting.
+`🎭` **Playwright-inspired API** – Live handles and locators for scripting player interactions.
 
-`🧪` **Type-Safe** – Native JavaScript and TypeScript support with full type safety.
+`🧪` **Type-Safe** – Native JavaScript and TypeScript with full type safety.
 
-`🔄` **Automatic Retries** – Built-in retry logic to eliminate flaky tests and ensure stability.
+`🔄` **Automatic Retries** – Built-in retry logic to handle flaky tests.
 
-`📊` **Rich Assertions** – Custom matchers specifically designed for Minecraft mechanics.
+`📊` **Rich Assertions** – Custom matchers built for Minecraft mechanics.
 
 `🔧` **Gradle Integration** – Run your entire suite with a single command.
 
 ## Quick Start
 
-### Prerequisites
+> **Prerequisites:** Java 17+, Gradle 7+, Node.js 16+, and a Paper/Spigot plugin project.
 
-- Java 17 or higher
-- Gradle 7.0 or higher
-- Node.js 16 or higher
-- A Paper/Spigot plugin project
+**1. Add the plugin to your `build.gradle.kts`:**
 
-### Installation
-
-1. Setup build.gradle.kts:
 ```kotlin
 plugins {
     id("io.github.drownek.paperwright") version "1.3.2"
@@ -43,19 +37,101 @@ plugins {
 
 paperwright {
     minecraftVersion.set("1.19.4")
-    runDir.set("run")
     testsDir.set(file("src/test/e2e"))
     acceptEula.set(true)
 }
 ```
-2. Init tests folder: `./gradlew paperwrightInit`
-3. Run tests: `./gradlew paperwrightTest`
 
-Please refer to the [Getting Started](https://github.com/Drownek/paperwright/wiki/Getting-Started) guide for detailed setup instructions.
+**2. Initialize the test folder:**
+
+```bash
+./gradlew paperwrightInit
+```
+
+**3. Run your tests:**
+
+```bash
+./gradlew paperwrightTest
+```
+
+See the [Getting Started](https://github.com/Drownek/paperwright/wiki/Getting-Started) guide for setup details.
+
+## Examples
+
+### Basic command test
+
+```typescript
+import { expect, test } from '@drownek/paperwright';
+
+test('help displays message', async ({ player }) => {
+  player.chat('/help');
+  await expect(player).toHaveReceivedMessage('Help');
+});
+```
+
+### GUI interaction
+
+```typescript
+test('admin can interact with gui', async ({ player }) => {
+  await player.makeOp();
+
+  player.chat('/example gui-settings');
+  const gui = await player.gui({ title: 'guiSettings' });
+
+  await gui.locator(item => item.getDisplayName().includes('guiItemInfo')).click();
+  await expect(player).toHaveReceivedMessage('You clicked on item');
+});
+```
+
+### Multi-bot testing
+
+```typescript
+test('multi-bot teleportation', async ({ player, createPlayer }) => {
+  await player.makeOp();
+  const friend = await createPlayer({ username: 'FriendBot' });
+
+  await friend.teleport(100, 100, 100);
+  player.chat(`/tp ${player.username} ${friend.username}`);
+
+  await expect(player).toBeNear(100, 100, 100, { tolerance: 2 });
+});
+```
+
+### Player actions
+
+```typescript
+test('teleport player', async ({ player }) => {
+  await player.teleport(123, 100, 321);
+  expect(player.bot.entity.position).toMatchObject({ x: 123.5, z: 321.5 });
+});
+
+test('give item to player', async ({ player }) => {
+  await player.giveItem('emerald', 5);
+  await expect(player).toContainItem('emerald', { count: 5 });
+});
+```
+
+See [Writing Tests](https://github.com/Drownek/paperwright/wiki/Writing-Tests) for more patterns and the full [Matchers Reference](https://github.com/Drownek/paperwright/wiki/Matchers-Reference).
+
+## Why Paperwright vs MockBukkit?
+
+| | **Paperwright** | **MockBukkit** |
+|---|---|---|
+| **Approach** | End-to-end – runs a real Paper server with real player bots | Unit testing – mocks the Bukkit API in-process |
+| **Server** | Real Paper server with actual game logic | No server – simulated API stubs |
+| **Player interaction** | Real Mineflayer bots that join, move, chat, and click GUIs | Mocked `Player` objects with simulated method calls |
+| **NMS / internals** | ✅ Full support – real server means real NMS | ❌ Breaks on NMS / reflection / internals |
+| **Plugin compatibility** | Tests the plugin exactly as players experience it | May miss bugs caused by mock/real behavior mismatch |
+| **Multi-plugin testing** | ✅ All plugins load together naturally | Limited – each mock is isolated |
+| **GUI testing** | ✅ First-class support with locators and click simulation | Partial – inventory content mocks supported; click/drag simulation limited |
+| **Speed** | Slower (server startup ~10-20s, then fast) | Very fast (milliseconds per test) |
+| **Best for** | Integration & E2E tests, NMS-heavy plugins, GUI testing | Fast unit tests for pure Bukkit API logic |
+
+> **💡 Tip:** Paperwright and MockBukkit work well together. MockBukkit for fast unit tests; Paperwright for end-to-end tests that verify behavior on a real server.
 
 ## Documentation
 
-See the [GitHub Wiki](../../wiki) for comprehensive guides:
+See the [GitHub Wiki](../../wiki):
 
 - [Getting Started](../../wiki/Getting-Started) - Installation and setup
 - [Writing Tests](../../wiki/Writing-Tests) - Test examples and patterns
