@@ -44,6 +44,23 @@ This command will prompt you for the test directory location (defaulting to `src
 ./gradlew paperwrightTest
 ```
 
+### 4. Continuous Integration (CI)
+
+Setting up CI takes less than 5 minutes. Use the official [paperwright-action](https://github.com/Drownek/paperwright-action) to run your entire test suite.
+Just create a `.github/workflows/e2e.yml` file with the following content:
+
+```yaml
+name: E2E Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: drownek/paperwright-action@v1
+```
+
 ## What Happens During Test Execution
 
 The framework will:
