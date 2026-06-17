@@ -13,3 +13,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: drownek/paperwright-action@v1
+        with:
+          working-directory: "./example_plugin"
