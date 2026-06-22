@@ -136,7 +136,7 @@ class PaperwrightPlugin : Plugin<Project> {
                             "build": "rimraf dist && tsc"
                           },
                           "dependencies": {
-                            "@drownek/paperwright": "^1.3.2"
+                            "@drownek/paperwright": "^1.3.3"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",

@@ -32,7 +32,7 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaSc
 
 ```kotlin
 plugins {
-    id("io.github.drownek.paperwright") version "1.3.2"
+    id("io.github.drownek.paperwright") version "1.3.3"
 }
 
 paperwright {
