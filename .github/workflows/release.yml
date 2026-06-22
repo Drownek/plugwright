@@ -1,17 +1,15 @@
 name: Release
-
 on:
   push:
     tags:
       - 'v*'
-
 jobs:
   publish:
     name: Publish and Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write # needed for creating github releases
-
+      contents: write      # for creating GitHub releases
+      id-token: write      # required for OIDC trusted publishing
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,13 +26,14 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
       - name: Publish NPM package
         working-directory: runner-package
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm ci
-          npm publish --access public
+          npm publish --access public --provenance
 
       - name: Publish Gradle plugin
         working-directory: gradle-plugin
