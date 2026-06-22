@@ -277,7 +277,7 @@ abstract class PaperwrightTestTask : DefaultTask() {
             // Step 1: Get the latest build number for this version
             logger.lifecycle("Fetching latest Paper build for Minecraft $version...")
             
-            val versionInfoUrl = "https://api.papermc.io/v2/projects/paper/versions/$version"
+            val versionInfoUrl = "https://fill.papermc.io/v3/projects/paper/versions/$version"
             val versionRequest = HttpRequest.newBuilder()
                 .uri(URI.create(versionInfoUrl))
                 .GET()
@@ -300,7 +300,7 @@ abstract class PaperwrightTestTask : DefaultTask() {
             logger.lifecycle("Found latest build: $latestBuild")
             
             // Step 2: Get the download name for this build
-            val buildInfoUrl = "https://api.papermc.io/v2/projects/paper/versions/$version/builds/$latestBuild"
+            val buildInfoUrl = "https://fill.papermc.io/v3/projects/paper/versions/$version/builds/$latestBuild"
             val buildRequest = HttpRequest.newBuilder()
                 .uri(URI.create(buildInfoUrl))
                 .GET()
@@ -314,11 +314,22 @@ abstract class PaperwrightTestTask : DefaultTask() {
             
             val buildJson = JsonParser.parseString(buildResponse.body()).asJsonObject
             val downloadsJson = buildJson.getAsJsonObject("downloads")
-            val applicationJson = downloadsJson.getAsJsonObject("application")
-            val downloadName = applicationJson.get("name").asString
+            val downloadEntry = when {
+                downloadsJson.has("server:default") -> downloadsJson.getAsJsonObject("server:default")
+                downloadsJson.has("application") -> downloadsJson.getAsJsonObject("application")
+                else -> {
+                    val firstKey = downloadsJson.keySet().firstOrNull()
+                        ?: throw RuntimeException("No download targets found in build response.")
+                    downloadsJson.getAsJsonObject(firstKey)
+                }
+            }
             
-            // Step 3: Download the JAR
-            val downloadUrl = "https://api.papermc.io/v2/projects/paper/versions/$version/builds/$latestBuild/downloads/$downloadName"
+            val downloadUrl = if (downloadEntry.has("url")) {
+                downloadEntry.get("url").asString
+            } else {
+                val downloadName = downloadEntry.get("name").asString
+                "https://fill.papermc.io/v3/projects/paper/versions/$version/builds/$latestBuild/downloads/$downloadName"
+            }
             logger.lifecycle("Downloading Paper server from: $downloadUrl")
             
             val downloadRequest = HttpRequest.newBuilder()
