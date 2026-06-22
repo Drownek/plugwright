@@ -1,3 +1,7 @@
+/**
+ * This test is mainly related to core runner package to check if everything executes in right order
+ */
+
 import { afterEach, beforeEach, describe, test, expect } from "@drownek/paperwright";
 
 const executionLog: string[] = [];
