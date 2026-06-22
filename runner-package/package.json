@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/drownek/paperwright.git",
+    "url": "https://github.com/Drownek/paperwright.git",
     "directory": "runner-package"
   },
-  "homepage": "https://github.com/drownek/paperwright#readme",
+  "homepage": "https://github.com/Drownek/paperwright#readme",
   "bugs": {
-    "url": "https://github.com/drownek/paperwright/issues"
+    "url": "https://github.com/Drownek/paperwright/issues"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
