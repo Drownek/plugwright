@@ -198,16 +198,70 @@ export class ItemWrapper {
         this.count = rawItem.count;
     }
 
-    static parseChat(raw: string): string {
-        try {
-            const parsed = JSON.parse(raw);
-            if (typeof parsed !== 'object') return parsed;
+    static parseChat(raw: any): string {
+        if (raw == null) return '';
+        if (typeof raw === 'string') {
+            try {
+                raw = JSON.parse(raw);
+            } catch (e) {
+                return raw;
+            }
+        }
+
+        if (typeof raw === 'object' && raw !== null) {
+            const unwrapNbt = (tag: any): any => {
+                if (tag === null || typeof tag !== 'object') return tag;
+                if (typeof tag.type === 'string' && 'value' in tag) {
+                    if (tag.type === 'compound') {
+                        const unwrapped: any = {};
+                        for (const key in tag.value) {
+                            unwrapped[key] = unwrapNbt(tag.value[key]);
+                        }
+                        return unwrapped;
+                    } else if (tag.type === 'list') {
+                        const listData = tag.value;
+                        if (listData && listData.type && Array.isArray(listData.value)) {
+                            return listData.value.map((v: any) => unwrapNbt({ type: listData.type, value: v }));
+                        } else if (Array.isArray(listData)) {
+                            return listData.map(unwrapNbt);
+                        }
+                        return [];
+                    } else {
+                        return tag.value;
+                    }
+                }
+                if (Array.isArray(tag)) {
+                    return tag.map(unwrapNbt);
+                }
+                const unwrapped: any = {};
+                for (const key in tag) {
+                    unwrapped[key] = unwrapNbt(tag[key]);
+                }
+                return unwrapped;
+            };
+
+            const unwrappedRaw = unwrapNbt(raw);
+
+            // If it unwrapped to a string, it might be a JSON string of a chat component.
+            if (typeof unwrappedRaw === 'string') {
+                try {
+                    const parsed = JSON.parse(unwrappedRaw);
+                    if (typeof parsed === 'object') {
+                        return ItemWrapper.parseChat(parsed);
+                    }
+                } catch (e) { }
+                return unwrappedRaw;
+            }
 
             const extractText = (obj: any): string => {
                 if (typeof obj === 'string') return obj;
                 if (!obj || typeof obj !== 'object') return '';
 
-                let result = obj.text || '';
+                let result = obj.text || obj.translate || '';
+
+                if (Array.isArray(obj.with)) {
+                    result += obj.with.map(extractText).join(' ');
+                }
 
                 if (Array.isArray(obj.extra)) {
                     result += obj.extra.map(extractText).join('');
@@ -216,13 +270,26 @@ export class ItemWrapper {
                 return result;
             };
 
-            return extractText(parsed);
-        } catch (e) {
-            return raw;
+            return extractText(unwrappedRaw);
         }
+
+        return String(raw);
     }
 
     getDisplayName(): string {
+        const components = (this.raw as any).components;
+        if (Array.isArray(components)) {
+            const customNameComp = components.find(c => c.type === 'custom_name');
+            if (customNameComp && customNameComp.data) {
+                return ItemWrapper.parseChat(customNameComp.data);
+            }
+        }
+
+        const customName = (this.raw as any).customName;
+        if (customName) {
+            return ItemWrapper.parseChat(customName);
+        }
+
         const nbtName = this.raw.nbt?.value?.display?.value?.Name?.value;
 
         if (nbtName) {
@@ -233,6 +300,20 @@ export class ItemWrapper {
     }
 
     getLore(): string[] {
+        const components = (this.raw as any).components;
+        if (Array.isArray(components)) {
+            const loreComp = components.find(c => c.type === 'lore');
+            // lore data might be an array of lines, e.g. { type: 'lore', data: [...] }
+            if (loreComp && Array.isArray(loreComp.data)) {
+                return loreComp.data.map((line: any) => ItemWrapper.parseChat(line));
+            }
+        }
+
+        const customLore = (this.raw as any).customLore;
+        if (customLore && Array.isArray(customLore)) {
+            return customLore.map((line: any) => ItemWrapper.parseChat(line));
+        }
+
         const nbtLore = this.raw.nbt?.value?.display?.value?.Lore?.value?.value;
 
         if (!nbtLore || !Array.isArray(nbtLore)) return [];
