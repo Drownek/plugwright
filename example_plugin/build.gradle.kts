@@ -1,12 +1,12 @@
 plugins {
     `java-library`
     id("de.eldoria.plugin-yml.bukkit") version "0.8.0"
-    id("com.gradleup.shadow") version "9.0.0-beta12"
-    id("io.github.drownek.paperwright") version "1.3.2"
+    id("com.gradleup.shadow") version "9.0.0"
+    id("io.github.drownek.paperwright") version "1.3.3-dev.0"
 }
 
 paperwright {
-    minecraftVersion.set("1.19.4")
+    minecraftVersion.set("1.21.11")
     acceptEula.set(true)
     testsDir.set(file("src/test/e2e"))
     downloadPlugins {
@@ -22,44 +22,29 @@ bukkit {
     apiVersion = "1.13"
     name = "ExamplePlugin"
     author = "Drownek"
+
+    commands {
+        register("example") {
+            description = "Example command for paperwright testing"
+        }
+    }
 }
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io/")
-    maven("https://storehouse.okaeri.eu/repository/maven-releases/")
-    maven("https://repo.panda-lang.org/releases")
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
 dependencies {
-    compileOnly("org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT")
-
-	implementation("io.github.drownek:platform-bukkit:2.3.2-SNAPSHOT")
-
-    implementation("eu.okaeri:okaeri-configs-json-simple:5.0.6")
+    compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
 
     /* lombok */
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    compileOnly("org.projectlombok:lombok:1.18.40")
+    annotationProcessor("org.projectlombok:lombok:1.18.40")
 }
 
 tasks.shadowJar {
     archiveFileName.set("bukkit-example-${project.version}.jar")
-
-    val prefix = "me.drownek.example.libs"
-    listOf(
-        "eu.okaeri",
-        "dev.rollczi.litecommands",
-        "com.cryptomorin",
-        "dev.triumphteam",
-        "panda",
-        "net.jodah",
-        "net.kyori",
-        "me.drownek.util",
-    ).forEach { pack ->
-        relocate(pack, "$prefix.$pack")
-    }
 }
 
 tasks.withType<JavaCompile> {
@@ -69,6 +54,6 @@ tasks.withType<JavaCompile> {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
