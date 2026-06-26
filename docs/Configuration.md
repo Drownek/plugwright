@@ -160,6 +160,15 @@ paperwright {
 }
 ```
 
+## Environment Variables
+
+### `PAPERWRIGHT_DEBUG`
+
+**Type:** `String` (e.g., `"1"`)  
+**Required:** No  
+
+Set `PAPERWRIGHT_DEBUG=1` in your environment to enable verbose debug logging during test execution. This is particularly useful for troubleshooting GUI flows and inspecting window open/close events from the bot.
+
 ## Complete Example
 
 ```kotlin
