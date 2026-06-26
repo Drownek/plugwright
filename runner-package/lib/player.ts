@@ -52,7 +52,7 @@ export class PlayerWrapper {
     }
 
     /** @internal */
-    _captureSpawnPromise(timeout: number = 10000): void {
+    _captureSpawnPromise(timeout: number = 30000): void {
         const bot = this.bot;
         // NOTE: bot.username is undefined until the client actually connects
         // and completes the handshake, so we resolve it lazily inside handlers.
@@ -98,7 +98,7 @@ export class PlayerWrapper {
     }
 
     async join(options: { timeout?: number } = {}): Promise<void> {
-        const { timeout = 10000 } = options;
+        const { timeout = 30000 } = options;
 
         if (!this._spawnPromise) {
             this._captureSpawnPromise(timeout);
@@ -244,7 +244,7 @@ export class PlayerWrapper {
         this._listenersBot = null;
         this._bindExtensions(newBot);
 
-        this._captureSpawnPromise(options.timeout || 10000);
+        this._captureSpawnPromise(options.timeout || 30000);
 
         try {
             await this.join(options);

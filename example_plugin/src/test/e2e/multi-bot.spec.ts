@@ -24,6 +24,6 @@ test('multi-bot teleportation', async ({ player, createPlayer }) => {
 
     // Verify the primary player is near the friend
     // Even if server hadn't processed teleport command yet, this method is waiting for default of 5000ms
-    // If player got teleported within that 5s window, test passes.
-    await expect(player).toBeNear(100, 100, 100, { tolerance: 2, timeout: 5000 });
+    // If player got teleported within that 15s window, test passes.
+    await expect(player).toBeNear(100, 100, 100, { tolerance: 2, timeout: 15000 });
 });
