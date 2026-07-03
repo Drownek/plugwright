@@ -5,6 +5,11 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.jvm.toolchain.JavaToolchainService
+import java.util.concurrent.atomic.AtomicBoolean
+
+object BannerState {
+    val printed = AtomicBoolean(false)
+}
 
 class PaperwrightPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -14,6 +19,10 @@ class PaperwrightPlugin : Plugin<Project> {
         val paperwrightClean = project.tasks.register("paperwrightClean") {
             group = "verification"
             description = "Wipes the test server data for a clean slate."
+
+            doFirst {
+                if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
+            }
 
             doLast {
                 val runDir = extension.runDir.get().asFile
@@ -60,6 +69,10 @@ class PaperwrightPlugin : Plugin<Project> {
             // Ensure clean runs before test
             dependsOn(paperwrightClean)
 
+            doFirst {
+                if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
+            }
+
             testsDir.set(extension.testsDir)
             minecraftVersion.set(extension.minecraftVersion)
             jvmArgs.set(extension.jvmArgs)
@@ -100,9 +113,52 @@ class PaperwrightPlugin : Plugin<Project> {
             }
         }
 
+        project.tasks.register("paperwrightRunServer", PaperwrightRunTask::class.java) {
+            // Ensure clean runs before starting the server
+            dependsOn(paperwrightClean)
+
+            doFirst {
+                if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
+            }
+
+            minecraftVersion.set(extension.minecraftVersion)
+            jvmArgs.set(extension.jvmArgs)
+            acceptEula.set(extension.acceptEula)
+            pluginUrls.set(extension.pluginUrls)
+            runDirFiles.set(extension.runDirFiles)
+
+            serverJarPath.set(
+                extension.runDir.map { runDir ->
+                    val serverJar = runDir.asFile.resolve("server.jar")
+                    serverJar.absolutePath
+                }
+            )
+
+            serverDir.set(
+                extension.runDir.map { runDir ->
+                    runDir.asFile.absolutePath
+                }
+            )
+
+            // Configure Java Toolchain if Java plugin is present
+            project.plugins.withId("java") {
+                val javaExtension = project.extensions.findByType(JavaPluginExtension::class.java)
+                val javaToolchains = project.extensions.findByType(JavaToolchainService::class.java)
+
+                if (javaExtension != null && javaToolchains != null) {
+                    javaLauncher.set(javaToolchains.launcherFor(javaExtension.toolchain))
+                }
+            }
+        }
+
         project.tasks.register("paperwrightInit") {
             group = "verification"
             description = "Interactively initializes a paperwright-test environment with required configs and an initial test file."
+            
+            doFirst {
+                if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
+            }
+
             doLast {
                 val defaultDir = "src/test/e2e"
                 val propertyDir = project.findProperty("paperwrightDir") as? String
@@ -220,18 +276,7 @@ class PaperwrightPlugin : Plugin<Project> {
             }
         }
 
-        // Print the banner once, before any "> Task :..." header, but only
-        // when one of our E2E tasks is actually in the task graph.
-        project.gradle.taskGraph.whenReady {
-            val ours = allTasks.any { task ->
-                task.project === project && (task.name == "paperwrightTest" || task.name == "paperwrightClean" || task.name == "paperwrightInit")
-            }
-            if (ours) Banner.print(project.logger)
-        }
-
         project.afterEvaluate {
-            val testTask = project.tasks.named("paperwrightTest", PaperwrightTestTask::class.java).get()
-
             // Only set up plugin jar dependency if not using external plugins only
             if (!extension.useExternalPluginsOnly.get()) {
                 // Try to find the task that produces the plugin jar
@@ -242,8 +287,12 @@ class PaperwrightPlugin : Plugin<Project> {
                 }
 
                 if (jarTask.isPresent) {
-                    testTask.dependsOn(jarTask)
-                    testTask.pluginJar.set(jarTask.get().outputs.files.singleFile)
+                    project.tasks.named("paperwrightTest", PaperwrightTestTask::class.java).configure {
+                        pluginJar.set(jarTask.map { it.outputs.files.singleFile })
+                    }
+                    project.tasks.named("paperwrightRunServer", PaperwrightRunTask::class.java).configure {
+                        pluginJar.set(jarTask.map { it.outputs.files.singleFile })
+                    }
                 }
             }
         }
