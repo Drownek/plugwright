@@ -114,7 +114,7 @@ async function main() {
     ].join(" ");
 
     execSync(
-        `git commit -m "chore: bump to ${newVersion}" -- ${filesToCommit}`,
+        `git commit -m "chore: bump to ${newVersion} [skip ci]" -- ${filesToCommit}`,
         { stdio: "inherit" }
     );
 
