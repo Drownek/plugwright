@@ -6,7 +6,7 @@
 
 End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaScript and TypeScript.
 
-<img width="1000" height="563" alt="Showcase" src="https://github.com/user-attachments/assets/6aa160b0-b419-4629-9824-36e109f9831b" />
+![Showcase](https://github.com/user-attachments/assets/6aa160b0-b419-4629-9824-36e109f9831b)
 
 ## Features
 
