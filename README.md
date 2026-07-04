@@ -39,6 +39,13 @@ paperwright {
     minecraftVersion.set("1.19.4")
     testsDir.set(file("src/test/e2e"))
     acceptEula.set(true)
+    
+    // Download some dependencies your plugin might need
+    downloadPlugins {
+        url("https://url.to/plugin1.jar")
+        url("https://url.to/plugin2.jar")
+        // ... etc
+    }
 }
 ```
 
