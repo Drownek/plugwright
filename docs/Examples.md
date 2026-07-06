@@ -12,6 +12,7 @@ Real-world test examples for common plugin features.
 - [Kits System](#kits-system)
 - [Minigame System](#minigame-system)
 - [Event-Based Testing](#event-based-testing)
+- [Multi-Bot Testing](#multi-bot-testing)
 - [Next Steps](#next-steps)
 
 ---
@@ -135,6 +136,8 @@ test('warp GUI lists available warps', async ({ player }) => {
 ## Kits System
 
 ```javascript
+import { test, expect, sleep } from '@drownek/paperwright';
+
 test('starter kit gives items', async ({ player }) => {
   player.chat('/kit starter');
   
@@ -145,7 +148,7 @@ test('starter kit gives items', async ({ player }) => {
 
 test('kit has cooldown', async ({ player }) => {
   player.chat('/kit starter');
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await sleep(1000);
   
   player.chat('/kit starter');
   await expect(player).toHaveReceivedMessage('cooldown');
@@ -182,18 +185,35 @@ test('cannot join full arena', async ({ player, server }) => {
 ## Event-Based Testing
 
 ```javascript
+import { test, expect } from '@drownek/paperwright';
+
 test('player receives item on first join', async ({ player }) => {
-  // Assuming plugin gives items on first join
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
+  // The matcher auto-retries for 5s, so no fixed sleep is needed here
   await expect(player).toHaveReceivedMessage('Welcome');
   await expect(player).toContainItem('wooden_sword');
 });
 
 test('scheduled announcement appears', async ({ player }) => {
-  // Wait for scheduled announcement (e.g., every 60 seconds)
-  await new Promise(resolve => setTimeout(resolve, 65000));
-  await expect(player).toHaveReceivedMessage('Server announcement');
+  // Wait up to 70s for an announcement that fires every 60s
+  await expect(player).toHaveReceivedMessage('Server announcement', { timeout: 70_000 });
+});
+```
+
+## Multi-Bot Testing
+
+Use `createPlayer` from the test context to spawn additional bots in the same test:
+
+```javascript
+import { test, expect } from '@drownek/paperwright';
+
+test('player can teleport to a friend', async ({ player, createPlayer }) => {
+  await player.makeOp();
+  const friend = await createPlayer({ username: 'FriendBot' });
+
+  await friend.teleport(100, 100, 100);
+  player.chat(`/tp ${player.username} ${friend.username}`);
+
+  await expect(player).toBeNear(100, 100, 100, { tolerance: 2 });
 });
 ```
 

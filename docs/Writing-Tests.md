@@ -17,13 +17,17 @@ test('test description', async ({ player }) => {
 Create `src/test/e2e/first.spec.js`:
 
 ```javascript
-import { test, expect } from '@drownek/paperwright';
+import { test, expect, sleep } from '@drownek/paperwright';
 
 test('player receives welcome message', async ({ player }) => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await sleep(2000);
   await expect(player).toHaveReceivedMessage('Welcome');
 });
 ```
+
+> **Tip:** Prefer the auto-retrying matchers (e.g. `toHaveReceivedMessage`,
+> `toContainItem`) over fixed `sleep()` calls. They poll until the assertion
+> passes or the timeout expires, so they're both faster and less flaky.
 
 ## Common Test Patterns
 
@@ -77,14 +81,60 @@ test('server executes commands', async ({ player, server }) => {
 });
 ```
 
+## Test Organization with `describe`
+
+For non-trivial suites you can group related tests and share setup/teardown
+logic using `describe`, `beforeEach`, and `afterEach`:
+
+```javascript
+import { describe, test, expect, beforeEach, afterEach } from '@drownek/paperwright';
+
+describe('Economy plugin', () => {
+  beforeEach(async ({ player }) => {
+    await player.makeOp();
+  });
+
+  afterEach(async ({ server, player }) => {
+    server.execute(`eco reset ${player.username}`);
+  });
+
+  test('player can check balance', async ({ player }) => {
+    player.chat('/balance');
+    await expect(player).toHaveReceivedMessage('$');
+  });
+});
+```
+
+- `describe` blocks can be nested; hooks fire outermost-in for `beforeEach`
+  and innermost-out for `afterEach`.
+- Hooks receive the same `TestContext` as the test (`player`, `server`,
+  `createPlayer`, `signal`).
+
+### `opTest` shorthand
+
+Most tests need the player to be opped before running commands. `opTest`
+is a small convenience that calls `player.makeOp()` for you before the test
+body executes:
+
+```javascript
+import { opTest, expect } from '@drownek/paperwright';
+
+opTest('admin command works', async ({ player }) => {
+  player.chat('/reload');
+  await expect(player).toHaveReceivedMessage('Reload complete');
+});
+```
+
 ## API Reference
 
 ### Test Context
 
-Each test receives a context object with:
+Each test (and hook) receives a context object with:
 
-- `player` - The Mineflayer bot instance
-- `server` - Server control interface
+- `player` - The primary `PlayerWrapper` (a Mineflayer bot wrapper)
+- `server` - Server control interface (run console commands)
+- `createPlayer({ username? })` - Spawn an additional bot for multi-player tests
+- `signal` - `AbortSignal` that fires when the test times out (`TEST_TIMEOUT`, default 30s)
 
 ### Player Actions
 
@@ -131,7 +181,7 @@ test('advanced waiting', async ({ player }) => {
 3. **Wait for conditions** - Use assertions that auto-retry
 4. **Test one thing** - Each test should verify one behavior
 5. **Check server logs** - They appear in console during test runs
-6. **Add delays when needed** - Use `setTimeout` for timing-dependent tests
+6. **Add delays when needed** - Use the exported `sleep(ms)` helper for timing-dependent tests
 
 ## Tips
 
