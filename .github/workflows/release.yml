@@ -79,7 +79,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Merge Custom Note and Changelog
+        env:
+          CHANGELOG: ${{ steps.github_release.outputs.changelog }}
+        run: |
+          if [ -s "RELEASE_NOTE.md" ]; then
+            cat RELEASE_NOTE.md > final_body.md
+            echo -e "\n---\n" >> final_body.md
+          else
+            touch final_body.md
+          fi
+          echo "$CHANGELOG" >> final_body.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          body: ${{steps.github_release.outputs.changelog}}
+          body_path: final_body.md
