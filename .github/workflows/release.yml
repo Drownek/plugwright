@@ -51,6 +51,31 @@ jobs:
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           commitMode: true
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "commit_template": "- #{{TITLE}}",
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feat"]
+                },
+                {
+                  "title": "## 🐛 Fixes",
+                  "labels": ["fix"]
+                },
+                {
+                  "title": "## 📦 Chores & Maintenance",
+                  "labels": ["chore", "refactor", "style", "docs", "test", "ci"]
+                }
+              ],
+              "label_extractor": [
+                {
+                  "pattern": "^(feat|fix|docs|style|refactor|perf|test|chore|ci)(\\([\\w\\-\\.]+\\))?(!)?: (.*)",
+                  "target": "$1"
+                }
+              ]
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
