@@ -41,7 +41,7 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaSc
 
 ```kotlin
 plugins {
-    id("io.github.drownek.plugwright") version "2.0.1"
+    id("io.github.drownek.plugwright") version "2.0.2"
 }
 
 plugwright {

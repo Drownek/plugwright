@@ -192,7 +192,7 @@ class PlugwrightPlugin : Plugin<Project> {
                             "build": "rimraf dist && tsc"
                           },
                           "dependencies": {
-                            "@drownek/plugwright": "^2.0.1"
+                            "@drownek/plugwright": "^2.0.2"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",
