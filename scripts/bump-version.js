@@ -133,10 +133,10 @@ async function main() {
     // optionally push
     const pushAnswer = await prompt("Push commits and tags? [Y/n] ");
     if (pushAnswer === "" || pushAnswer.toLowerCase() === "y") {
-        execSync(createTag ? "git push && git push --tags" : "git push", { stdio: "inherit" });
+        execSync(createTag ? `git push && git push origin v${newVersion}` : "git push", { stdio: "inherit" });
         console.log("Pushed.");
     } else {
-        console.log(`Skipped push. Run: git push${createTag ? " && git push --tags" : ""}`);
+        console.log(`Skipped push. Run: git push${createTag ? ` && git push origin v${newVersion}` : ""}`);
     }
 }
 
