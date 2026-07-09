@@ -1,4 +1,4 @@
-package me.drownek.paperwright
+package me.drownek.plugwright
 
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -11,12 +11,12 @@ object BannerState {
     val printed = AtomicBoolean(false)
 }
 
-class PaperwrightPlugin : Plugin<Project> {
+class PlugwrightPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val extension = project.extensions.create("paperwright", PaperwrightExtension::class.java, project)
+        val extension = project.extensions.create("plugwright", PlugwrightExtension::class.java, project)
 
-        // Register paperwrightClean task
-        val paperwrightClean = project.tasks.register("paperwrightClean") {
+        // Register plugwrightClean task
+        val plugwrightClean = project.tasks.register("plugwrightClean") {
             group = "verification"
             description = "Wipes the test server data for a clean slate."
 
@@ -65,9 +65,9 @@ class PaperwrightPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("paperwrightTest", PaperwrightTestTask::class.java) {
+        project.tasks.register("plugwrightTest", PlugwrightTestTask::class.java) {
             // Ensure clean runs before test
-            dependsOn(paperwrightClean)
+            dependsOn(plugwrightClean)
 
             doFirst {
                 if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
@@ -113,9 +113,9 @@ class PaperwrightPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("paperwrightRunServer", PaperwrightRunTask::class.java) {
+        project.tasks.register("plugwrightRunServer", PlugwrightRunTask::class.java) {
             // Ensure clean runs before starting the server
-            dependsOn(paperwrightClean)
+            dependsOn(plugwrightClean)
 
             doFirst {
                 if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
@@ -151,9 +151,9 @@ class PaperwrightPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("paperwrightInit") {
+        project.tasks.register("plugwrightInit") {
             group = "verification"
-            description = "Interactively initializes a paperwright-test environment with required configs and an initial test file."
+            description = "Interactively initializes a plugwright-test environment with required configs and an initial test file."
             
             doFirst {
                 if (BannerState.printed.compareAndSet(false, true)) Banner.print(project.logger)
@@ -161,7 +161,7 @@ class PaperwrightPlugin : Plugin<Project> {
 
             doLast {
                 val defaultDir = "src/test/e2e"
-                val propertyDir = project.findProperty("paperwrightDir") as? String
+                val propertyDir = project.findProperty("plugwrightDir") as? String
 
                 val inputDir = propertyDir ?: run {
                     project.logger.lifecycle("Enter the test directory location [default: $defaultDir]:")
@@ -192,7 +192,7 @@ class PaperwrightPlugin : Plugin<Project> {
                             "build": "rimraf dist && tsc"
                           },
                           "dependencies": {
-                            "@drownek/paperwright": "^1.3.3"
+                            "@drownek/plugwright": "^1.3.3"
                           },
                           "devDependencies": {
                             "@types/node": "^22.10.5",
@@ -242,7 +242,7 @@ class PaperwrightPlugin : Plugin<Project> {
                 if (!testFile.exists()) {
                     testFile.writeText(
                         """
-                        import {expect, test} from '@drownek/paperwright';
+                        import {expect, test} from '@drownek/plugwright';
                         
                         test('help displays message', async ({ player, server }) => {
                           player.chat('/help');
@@ -268,7 +268,7 @@ class PaperwrightPlugin : Plugin<Project> {
                         throw GradleException("EXEC ERROR: 'npm install' failed with exit code ${execResult.exitValue}.")
                     }
                     project.logger.lifecycle("Dependencies installed successfully.")
-                    project.logger.lifecycle("\nYou're all set! Run tests with: ./gradlew paperwrightTest")
+                    project.logger.lifecycle("\nYou're all set! Run tests with: ./gradlew plugwrightTest")
                 } catch (e: Exception) {
                     if (e is GradleException) throw e
                     throw GradleException("EXEC FATAL: Failed to launch npm process. Original error: ${e.message}", e)
@@ -287,10 +287,10 @@ class PaperwrightPlugin : Plugin<Project> {
                 }
 
                 if (jarTask.isPresent) {
-                    project.tasks.named("paperwrightTest", PaperwrightTestTask::class.java).configure {
+                    project.tasks.named("plugwrightTest", PlugwrightTestTask::class.java).configure {
                         pluginJar.set(jarTask.map { it.outputs.files.singleFile })
                     }
-                    project.tasks.named("paperwrightRunServer", PaperwrightRunTask::class.java).configure {
+                    project.tasks.named("plugwrightRunServer", PlugwrightRunTask::class.java).configure {
                         pluginJar.set(jarTask.map { it.outputs.files.singleFile })
                     }
                 }

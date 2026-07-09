@@ -103,7 +103,7 @@ export async function runTestSession(): Promise<void> {
 
     // Ensure the Paper server dies if our runner is killed (e.g. Gradle task
     // cancelled from the IDE). Otherwise the java.exe keeps running and holds
-    // run/logs/latest.log open, breaking the next paperwrightClean on Windows.
+    // run/logs/latest.log open, breaking the next plugwrightClean on Windows.
     const killServerTree = (): void => {
         if (!serverProcess.pid || serverProcess.killed || serverProcess.exitCode !== null) return;
         try {

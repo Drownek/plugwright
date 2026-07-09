@@ -23,7 +23,7 @@ For additional TypeScript test examples, see the [StaffActivityMonitor project](
 ## Basic Command Testing
 
 ```javascript
-import { test, expect } from '@drownek/paperwright';
+import { test, expect } from '@drownek/plugwright';
 
 test('help command shows available commands', async ({ player }) => {
   player.chat('/help');

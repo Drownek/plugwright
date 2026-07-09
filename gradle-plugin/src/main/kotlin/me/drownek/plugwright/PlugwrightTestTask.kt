@@ -1,11 +1,11 @@
-package me.drownek.paperwright
+package me.drownek.plugwright
 
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import java.io.File
 
-abstract class PaperwrightTestTask : AbstractPaperwrightTask() {
+abstract class PlugwrightTestTask : AbstractPlugwrightTask() {
 
     @get:InputDirectory
     @get:Optional
@@ -105,7 +105,7 @@ abstract class PaperwrightTestTask : AbstractPaperwrightTask() {
 
         runCommand(
             userTestsDirectory, 
-            "node", "node_modules/@drownek/paperwright/dist/cli.js",
+            "node", "node_modules/@drownek/plugwright/dist/cli.js",
             env = envMap
         )
         

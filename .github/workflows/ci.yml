@@ -21,6 +21,6 @@ jobs:
           cd runner-package
           npm install
           npm run build
-      - uses: drownek/paperwright-action@v1
+      - uses: drownek/plugwright-action@v1
         with:
           working-directory: "./example_plugin"

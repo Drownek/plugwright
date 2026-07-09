@@ -2,10 +2,10 @@ plugins {
     `java-library`
     id("de.eldoria.plugin-yml.bukkit") version "0.8.0"
     id("com.gradleup.shadow") version "9.0.0"
-    id("io.github.drownek.paperwright") version "1.3.3"
+    id("io.github.drownek.plugwright") version "1.3.3"
 }
 
-paperwright {
+plugwright {
     minecraftVersion.set("1.21.11")
     acceptEula.set(true)
     testsDir.set(file("src/test/e2e"))
@@ -25,7 +25,7 @@ bukkit {
 
     commands {
         register("example") {
-            description = "Example command for paperwright testing"
+            description = "Example command for plugwright testing"
         }
     }
 }

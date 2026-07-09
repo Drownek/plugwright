@@ -1,6 +1,6 @@
-# Paperwright Test Framework Wiki
+# Plugwright Test Framework Wiki
 
-Welcome to the Paperwright Test Framework documentation!
+Welcome to the Plugwright Test Framework documentation!
 
 ## Getting Started
 

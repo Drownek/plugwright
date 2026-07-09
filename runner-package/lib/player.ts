@@ -124,13 +124,13 @@ export class PlayerWrapper {
         });
 
         bot.on('windowOpen', (window: unknown) => {
-            if (process.env.PAPERWRIGHT_DEBUG !== '1') return;
+            if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string; type?: string | number; slots?: unknown[] };
             console.log(pc.gray(`[DEBUG] [Bot ${botUsername}] Global windowOpen event - Title: "${win.title}", Type: ${win.type}, SlotCount: ${win.slots?.length}`));
         });
 
         bot.on('windowClose', (window: unknown) => {
-            if (process.env.PAPERWRIGHT_DEBUG !== '1') return;
+            if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string };
             console.log(pc.gray(`[DEBUG] [Bot ${botUsername}] windowClose event - Window: ${win?.title || 'unknown'}`));
         });

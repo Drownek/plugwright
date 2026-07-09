@@ -1,4 +1,4 @@
-package me.drownek.paperwright
+package me.drownek.plugwright
 
 import com.google.gson.JsonParser
 import org.gradle.api.DefaultTask
@@ -18,7 +18,7 @@ import java.time.Duration
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.DumperOptions
 
-abstract class AbstractPaperwrightTask : DefaultTask() {
+abstract class AbstractPlugwrightTask : DefaultTask() {
 
     @get:Input
     abstract val serverJarPath: Property<String>
@@ -48,7 +48,7 @@ abstract class AbstractPaperwrightTask : DefaultTask() {
 
     @get:Input
     @get:Optional
-    abstract val runDirFiles: ListProperty<PaperwrightExtension.RunDirFile>
+    abstract val runDirFiles: ListProperty<PlugwrightExtension.RunDirFile>
 
     protected fun prepareServerEnvironment(): File {
         val serverJar = serverJarPath.get()

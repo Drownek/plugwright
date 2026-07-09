@@ -1,17 +1,17 @@
-# @drownek/paperwright
+# @drownek/plugwright
 
 End-to-end testing runner for Paper/Spigot Minecraft plugins.
 
 ## Installation
 
 ```bash
-npm install @drownek/paperwright
+npm install @drownek/plugwright
 ```
 
 ## Quick Start
 
 ```javascript
-import { test, expect } from '@drownek/paperwright';
+import { test, expect } from '@drownek/plugwright';
 
 test('player can join server', async ({ player }) => {
   player.chat('/help');
@@ -35,7 +35,7 @@ test('player can interact with GUI', async ({ player }) => {
 
 ## Documentation
 
-Full documentation is available in the [GitHub repository Wiki](https://github.com/Drownek/paperwright/wiki).
+Full documentation is available in the [GitHub repository Wiki](https://github.com/Drownek/plugwright/wiki).
 
 ## License
 

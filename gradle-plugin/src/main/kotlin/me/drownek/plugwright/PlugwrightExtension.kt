@@ -1,4 +1,4 @@
-package me.drownek.paperwright
+package me.drownek.plugwright
 
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
@@ -6,7 +6,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import java.io.File
 
-abstract class PaperwrightExtension(project: Project) {
+abstract class PlugwrightExtension(project: Project) {
     /**
      * Directory containing test files (.spec.js)
      */
@@ -43,7 +43,7 @@ abstract class PaperwrightExtension(project: Project) {
     val acceptEula: Property<Boolean> = project.objects.property(Boolean::class.java).convention(true)
 
     /**
-     * List of files/folders to exclude from deletion during paperwrightClean.
+     * List of files/folders to exclude from deletion during plugwrightClean.
      * By default, excludes server.jar, cache, and libraries folders.
      * These paths are relative to the run directory.
      */
@@ -63,7 +63,7 @@ abstract class PaperwrightExtension(project: Project) {
 
     /**
      * Whether to use only externally downloaded plugins instead of building the project plugin.
-     * When true, the paperwrightTest task will not depend on jar/shadowJar/reobfJar tasks.
+     * When true, the plugwrightTest task will not depend on jar/shadowJar/reobfJar tasks.
      * Useful when running E2E tests with plugins downloaded from external sources only.
      */
     val useExternalPluginsOnly: Property<Boolean> = project.objects.property(Boolean::class.java).convention(false)

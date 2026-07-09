@@ -2,7 +2,7 @@
  * Tests for basic PlayerWrapper methods.
  */
 
-import { expect, test } from '@drownek/paperwright';
+import { expect, test } from '@drownek/plugwright';
 
 test('makeOp', async ({ player }) => {
     // This executes op server command, and we wait for response from server

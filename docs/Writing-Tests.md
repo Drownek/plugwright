@@ -5,7 +5,7 @@
 Tests use a simple API similar to Jest:
 
 ```javascript
-import { test, expect } from '@drownek/paperwright';
+import { test, expect } from '@drownek/plugwright';
 
 test('test description', async ({ player }) => {
   // Your test code here
@@ -17,7 +17,7 @@ test('test description', async ({ player }) => {
 Create `src/test/e2e/first.spec.js`:
 
 ```javascript
-import { test, expect } from '@drownek/paperwright';
+import { test, expect } from '@drownek/plugwright';
 
 test('player receives welcome message', async ({ player }) => {
   await new Promise(resolve => setTimeout(resolve, 2000));
@@ -113,7 +113,7 @@ See [Matchers Reference](Matchers-Reference) for all available assertions.
 The framework provides several exported utilities for advanced waiting and polling:
 
 ```javascript
-import { test, sleep, poll, waitForAssertion, waitUntil, waitForStable } from '@drownek/paperwright';
+import { test, sleep, poll, waitForAssertion, waitUntil, waitForStable } from '@drownek/plugwright';
 
 test('advanced waiting', async ({ player }) => {
   // Sleep for 1 second

@@ -1,9 +1,9 @@
-package me.drownek.paperwright
+package me.drownek.plugwright
 
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-abstract class PaperwrightRunTask : AbstractPaperwrightTask() {
+abstract class PlugwrightRunTask : AbstractPlugwrightTask() {
 
     init {
         group = "verification"

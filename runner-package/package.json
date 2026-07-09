@@ -1,5 +1,5 @@
 {
-  "name": "@drownek/paperwright",
+  "name": "@drownek/plugwright",
   "version": "1.3.4-dev.0",
   "description": "End-to-end testing framework for Paper/Spigot Minecraft plugins",
   "type": "module",
@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Drownek/paperwright.git",
+    "url": "https://github.com/Drownek/plugwright.git",
     "directory": "runner-package"
   },
-  "homepage": "https://github.com/Drownek/paperwright#readme",
+  "homepage": "https://github.com/Drownek/plugwright#readme",
   "bugs": {
-    "url": "https://github.com/Drownek/paperwright/issues"
+    "url": "https://github.com/Drownek/plugwright/issues"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Paperwright
+about: Suggest an idea for Plugwright
 title: ''
 labels: enhancement
 assignees: ''

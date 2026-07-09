@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve Paperwright
+about: Create a report to help us improve Plugwright
 title: ''
 labels: bug
 assignees: ''
@@ -22,7 +22,7 @@ A clear and concise description of what you expected to happen.
  - OS: [e.g. Windows, Ubuntu]
  - Node.js version: [e.g. 18.x]
  - Java version: [e.g. 17]
- - Paperwright version: [e.g. 1.3.3]
+ - Plugwright version: [e.g. 1.3.3]
  - Minecraft version: [e.g. 1.19.4]
 
 **Additional context**

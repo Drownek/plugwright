@@ -15,10 +15,10 @@ Add the plugin to your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("io.github.drownek.paperwright") version "1.3.3"
+    id("io.github.drownek.plugwright") version "1.3.3"
 }
 
-paperwright {
+plugwright {
     minecraftVersion.set("1.19.4")
     runDir.set("run")
     testsDir.set(file("src/test/e2e"))
@@ -33,7 +33,7 @@ paperwright {
 To automatically scaffold your tests directory, `package.json`, `tsconfig.json`, and an example test, run:
 
 ```bash
-./gradlew paperwrightInit
+./gradlew plugwrightInit
 ```
 
 This command will prompt you for the test directory location (defaulting to `src/test/e2e`), set up TypeScript, install dependencies, and generate an `example.spec.ts` file so you can get started immediately.
@@ -41,12 +41,12 @@ This command will prompt you for the test directory location (defaulting to `src
 ### 3. Run Tests
 
 ```bash
-./gradlew paperwrightTest
+./gradlew plugwrightTest
 ```
 
 ### 4. Continuous Integration (CI)
 
-Setting up CI takes less than 5 minutes. Use the official [paperwright-action](https://github.com/Drownek/paperwright-action) to run your entire test suite.
+Setting up CI takes less than 5 minutes. Use the official [plugwright-action](https://github.com/Drownek/plugwright-action) to run your entire test suite.
 Just create a `.github/workflows/e2e.yml` file with the following content:
 
 ```yaml
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: drownek/paperwright-action@v1
+      - uses: drownek/plugwright-action@v1
 ```
 
 ## What Happens During Test Execution
@@ -99,9 +99,9 @@ your-plugin/
 │       └── node_modules/
 ├── build.gradle.kts
 └── run/                        # Created automatically
-    ├── server.jar              # Preserved by paperwrightClean
-    ├── cache/                  # Preserved by paperwrightClean
-    ├── libraries/              # Preserved by paperwrightClean
+    ├── server.jar              # Preserved by plugwrightClean
+    ├── cache/                  # Preserved by plugwrightClean
+    ├── libraries/              # Preserved by plugwrightClean
     ├── plugins/                # Cleaned before each run
     │   └── your-plugin.jar
     ├── world/                  # Cleaned before each run

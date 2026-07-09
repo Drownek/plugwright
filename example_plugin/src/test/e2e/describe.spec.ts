@@ -2,7 +2,7 @@
  * This test is mainly related to core runner package to check if everything executes in right order
  */
 
-import { afterEach, beforeEach, describe, test, expect } from "@drownek/paperwright";
+import { afterEach, beforeEach, describe, test, expect } from "@drownek/plugwright";
 
 const executionLog: string[] = [];
 

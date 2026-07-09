@@ -1,1 +1,1 @@
-rootProject.name = "paperwright-gradle-plugin"
+rootProject.name = "plugwright-gradle-plugin"
