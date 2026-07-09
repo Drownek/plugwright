@@ -15,7 +15,7 @@ Add the plugin to your `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("io.github.drownek.plugwright") version "2.0.0"
+    id("io.github.drownek.plugwright") version "2.0.1"
 }
 
 plugwright {
