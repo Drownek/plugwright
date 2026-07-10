@@ -6,7 +6,8 @@
 
 End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaScript and TypeScript.
 
-![Showcase](https://github.com/user-attachments/assets/6aa160b0-b419-4629-9824-36e109f9831b)
+![Showcase](https://github.com/user-attachments/assets/0272a6d9-f9ab-4486-8bf3-ee5909a10ee9)
+
 
 > [!WARNING]
 > **Migration from Paperwright (v1.x to v2.0)**
