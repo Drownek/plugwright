@@ -171,3 +171,21 @@ describe('afterEach runs even if test body mutates state', () => {
         expect(value).toBe('clean');
     });
 });
+
+describe('toThrow and toThrowAsync with non-Error objects/strings', () => {
+    test('should match string errors and non-Error objects', async () => {
+        expect(() => { throw "string error"; }).toThrow("string");
+        expect(() => { throw "string error"; }).toThrow(/string/);
+        expect(() => { throw { myMessage: "object error" }; }).toThrow("[object Object]");
+        expect(() => { throw new Error("my error"); }).toThrow("my");
+        expect(() => { throw new Error("my error"); }).toThrow(/my/);
+    });
+
+    test('should match async string errors and non-Error objects', async () => {
+        await expect(async () => { throw "async string error"; }).toThrowAsync("async");
+        await expect(async () => { throw "async string error"; }).toThrowAsync(/async/);
+        await expect(async () => { throw { myMessage: "async object error" }; }).toThrowAsync("[object Object]");
+        await expect(async () => { throw new Error("async my error"); }).toThrowAsync("async");
+        await expect(async () => { throw new Error("async my error"); }).toThrowAsync(/async/);
+    });
+});

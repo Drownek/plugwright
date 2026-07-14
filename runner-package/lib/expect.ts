@@ -223,16 +223,22 @@ export class Matchers<T = unknown> {
         if (expected === undefined) {
             this._assert(didThrow, 'Expected function not to throw', '');
         } else if (typeof expected === 'string') {
+            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
+                ? String((thrownError as any).message)
+                : String(thrownError);
             this._assert(
-                thrownError.message.includes(expected),
+                message.includes(expected),
                 `Expected error not to include "${expected}"`,
-                `Expected error to include "${expected}", but got "${thrownError.message}"`
+                `Expected error to include "${expected}", but got "${message}"`
             );
         } else if (expected instanceof RegExp) {
+            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
+                ? String((thrownError as any).message)
+                : String(thrownError);
             this._assert(
-                expected.test(thrownError.message),
+                expected.test(message),
                 `Expected error not to match ${expected}`,
-                `Expected error to match ${expected}, but got "${thrownError.message}"`
+                `Expected error to match ${expected}, but got "${message}"`
             );
         } else if (typeof expected === 'function') {
             this._assert(
@@ -266,16 +272,22 @@ export class Matchers<T = unknown> {
         if (expected === undefined) {
             this._assert(didThrow, 'Expected async function not to throw', '');
         } else if (typeof expected === 'string') {
+            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
+                ? String((thrownError as any).message)
+                : String(thrownError);
             this._assert(
-                thrownError.message.includes(expected),
+                message.includes(expected),
                 `Expected error not to include "${expected}"`,
-                `Expected error to include "${expected}", but got "${thrownError.message}"`
+                `Expected error to include "${expected}", but got "${message}"`
             );
         } else if (expected instanceof RegExp) {
+            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
+                ? String((thrownError as any).message)
+                : String(thrownError);
             this._assert(
-                expected.test(thrownError.message),
+                expected.test(message),
                 `Expected error not to match ${expected}`,
-                `Expected error to match ${expected}, but got "${thrownError.message}"`
+                `Expected error to match ${expected}, but got "${message}"`
             );
         } else if (typeof expected === 'function') {
             this._assert(
