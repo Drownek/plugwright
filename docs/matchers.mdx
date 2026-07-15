@@ -1,0 +1,16 @@
+---
+title: "Matchers"
+description: "Assertions and matchers available in Plugwright."
+---
+
+Plugwright comes with a powerful set of matchers designed specifically for Minecraft plugin testing.
+
+| Matcher | Description | Example |
+|---------|-------------|---------|
+| `toContainItem(item, amount)` | Checks if a player's inventory contains a specific item and amount. | `await expect(player.inventory).toContainItem('DIAMOND', 5);` |
+| `toHaveReceivedMessage(text)` | Checks if a player received a specific chat message. | `await expect(player).toHaveReceivedMessage('Welcome to the server!');` |
+| `toBeNear(x, y, z)` | Checks if a player is located near specific coordinates. | `await expect(player).toBeNear(100, 64, 100);` |
+
+<Tip>
+Always use `await` with your assertions, as they often need to poll the server state!
+</Tip>

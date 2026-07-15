@@ -1,0 +1,42 @@
+---
+title: "API Reference"
+description: "Detailed API documentation for advanced users."
+---
+
+## `player` / `bot` Object
+
+The `player` or `bot` object represents a real Minecraft client connected to the test server.
+
+### Methods
+
+- **`player.chat(message: string)`**
+  Sends a chat message or command.
+  ```javascript
+  await player.chat('/spawn');
+  ```
+
+- **`player.gui.locator(name: string)`**
+  Returns a locator for an item in the currently open GUI matching the name.
+  ```javascript
+  const button = player.gui.locator('Confirm');
+  ```
+
+### Properties
+
+- **`player.inventory`**
+  Access the player's current inventory state.
+  
+- **`player.name`**
+  The randomly generated or assigned name of the bot.
+
+## `server` Object
+
+The `server` object gives you control over the backend Minecraft server.
+
+### Methods
+
+- **`server.dispatchCommand(command: string)`**
+  Executes a command from the server console.
+  ```javascript
+  await server.dispatchCommand(`give ${player.name} diamond 64`);
+  ```

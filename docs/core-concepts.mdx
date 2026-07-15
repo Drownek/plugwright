@@ -1,0 +1,44 @@
+---
+title: "Core Concepts"
+description: "Understand the fundamentals of Plugwright."
+---
+
+## Writing Tests
+
+In Plugwright, every test runs with a pre-configured context. You use `test()` to define a scenario and `expect()` to make assertions.
+
+```javascript
+import { test, expect } from '@plugwright/test';
+
+test('Basic test', async ({ player }) => {
+    // Your test logic here
+});
+```
+
+## Locators
+
+Locators are your secret weapon. Plugwright allows you to precisely find and interact with GUIs, something no other framework does effectively!
+
+```javascript
+test('Click an item in GUI', async ({ player }) => {
+    await player.chat('/openmenu');
+    
+    // Find an item named "Shop" in the GUI and click it
+    const shopItem = player.gui.locator('Shop');
+    await shopItem.click();
+    
+    await expect(player).toHaveReceivedMessage('You opened the shop!');
+});
+```
+
+## Multi-Bot
+
+Testing economy, trading, or PvP? You can easily spawn multiple bots to test interactions between players.
+
+```javascript
+test('Players can trade', async ({ bot1, bot2 }) => {
+    await bot1.chat(`/pay ${bot2.name} 100`);
+    
+    await expect(bot2).toHaveReceivedMessage('You received 100 coins!');
+});
+```

@@ -1,0 +1,41 @@
+---
+title: "Quick Start"
+description: "Start running your first test in less than 5 minutes."
+---
+
+## Prerequisites
+
+Before you begin, you need:
+- **Java 17** or higher
+- **Node.js** (for running the test runner)
+
+## Installation
+
+Add Plugwright to your `build.gradle.kts` file:
+
+```kotlin
+plugins {
+    id("dev.plugwright") version "1.0.0"
+}
+```
+
+## Initialization
+
+Run the init command to set up the default configuration and an example test in your project:
+
+```bash
+./gradlew plugwrightInit
+```
+
+## Your First Test
+
+Here's an example of the simplest test. Plugwright starts the server, connects a bot, and makes it type a command:
+
+```javascript
+import { test, expect } from '@plugwright/test';
+
+test('Player can run /help command', async ({ player }) => {
+    await player.chat('/help');
+    await expect(player).toHaveReceivedMessage('Help Menu:');
+});
+```
