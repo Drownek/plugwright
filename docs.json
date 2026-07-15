@@ -15,14 +15,19 @@
       "group": "Get Started",
       "pages": [
         "docs/introduction",
-        "docs/quickstart"
+        "docs/quickstart",
+        "docs/configuration"
       ]
     },
     {
       "group": "Documentation",
       "pages": [
         "docs/core-concepts",
+        "docs/writing-tests",
+        "docs/gui-testing",
         "docs/matchers",
+        "docs/test-filtering",
+        "docs/examples",
         "docs/ci-cd",
         "docs/api-reference"
       ]
