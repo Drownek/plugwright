@@ -10,7 +10,7 @@ In your `build.gradle.kts`:
 ```kotlin
 plugwright {
     minecraftVersion.set("1.19.4")
-    runDir.set("run")
+    runDir.set(file("run"))
     testsDir.set(file("src/test/e2e"))
     acceptEula.set(true)
     downloadPlugins {
@@ -25,7 +25,7 @@ plugwright {
 
 **Type:** `Property<String>`  
 **Required:** Yes  
-**Default:** None
+**Default:** `"1.19.4"`
 
 The Minecraft version to use for testing.
 
@@ -36,20 +36,20 @@ minecraftVersion.set("1.20.1")
 
 ### `runDir`
 
-**Type:** `Property<String>`  
+**Type:** `DirectoryProperty`  
 **Required:** No  
-**Default:** `"run"`
+**Default:** `project.layout.projectDirectory.dir("run")`
 
 Directory where the test server will be located.
 
 ```kotlin
-runDir.set("run")
-runDir.set("test-server")
+runDir.set(file("run"))
+runDir.set(file("test-server"))
 ```
 
 ### `testsDir`
 
-**Type:** `Property<File>`  
+**Type:** `DirectoryProperty`  
 **Required:** No  
 **Default:** `file("src/test/e2e")`
 
@@ -64,9 +64,9 @@ testsDir.set(file("tests/integration"))
 
 **Type:** `Property<Boolean>`  
 **Required:** No  
-**Default:** `false`
+**Default:** `true`
 
-Automatically accept Minecraft EULA, if you agree to the [Minecraft EULA](https://www.minecraft.net/en-us/eula)
+Automatically accept Minecraft EULA, if you agree to the [Minecraft EULA](https://www.minecraft.net/en-us/eula).
 
 ```kotlin
 acceptEula.set(true)
@@ -74,7 +74,7 @@ acceptEula.set(true)
 
 ### `cleanExcludePatterns`
 
-**Type:** `Property<List<String>>`  
+**Type:** `ListProperty<String>`  
 **Required:** No  
 **Default:** `listOf("server.jar", "cache", "libraries")`
 
@@ -110,7 +110,7 @@ useExternalPluginsOnly.set(true)
 
 ### `downloadPlugins`
 
-**Type:** `Action<DownloadPluginsSpec>`
+**Type:** `Action<PluginDownloadSpec>`
 **Required:** No
 
 Download external plugins (like dependencies) before starting the server.
@@ -118,8 +118,22 @@ Download external plugins (like dependencies) before starting the server.
 ```kotlin
 plugwright {
     downloadPlugins {
-        url("https://url/to/plugin.jar")
+        url("https://url.to/plugin.jar")
     }
+}
+```
+
+### `jvmArgs`
+
+**Type:** `ListProperty<String>`  
+**Required:** No  
+**Default:** `listOf("-Xmx2G")`
+
+Arguments to pass to the Java virtual machine when starting the test server.
+
+```kotlin
+plugwright {
+    jvmArgs.set(listOf("-Xmx4G", "-XX:+UseG1GC"))
 }
 ```
 
@@ -159,7 +173,7 @@ Set `PLUGWRIGHT_DEBUG=1` in your environment to enable verbose debug logging dur
 plugwright {
     // Server configuration
     minecraftVersion.set("1.19.4")
-    runDir.set("run")
+    runDir.set(file("run"))
     acceptEula.set(true)
     
     // Test configuration

@@ -80,7 +80,7 @@ Strict equality check using `Object.is()`. Use for primitives.
 expect(42).toBe(42);
 expect('hello').toBe('hello');
 expect(true).toBe(true);
-expect(player.bot.username).toBe('Test_123');
+expect(player.username).toBe('Test_123');
 ```
 
 ### `toEqual(value)`
@@ -128,7 +128,7 @@ expect(Number('invalid')).toBeNaN();
 
 ## Numbers
 
-### `toBeGreaterThan()` / `toBeGreaterThanOrEqual()`
+### `toBeGreaterThan(number)` / `toBeGreaterThanOrEqual(number)`
 
 ```javascript
 expect(10).toBeGreaterThan(5);
@@ -138,7 +138,7 @@ const inventory = player.inventory.items();
 expect(inventory.length).toBeGreaterThan(0);
 ```
 
-### `toBeLessThan()` / `toBeLessThanOrEqual()`
+### `toBeLessThan(number)` / `toBeLessThanOrEqual(number)`
 
 ```javascript
 expect(5).toBeLessThan(10);
@@ -164,7 +164,7 @@ expect(Math.PI).toBeCloseTo(3.14, 2);
 ```javascript
 expect('Hello World').toMatch(/World/);
 expect('Hello World').toMatch('World');
-expect(player.bot.username).toMatch(/Test_\d+/);
+expect(player.username).toMatch(/Test_\d+/);
 ```
 
 ### `toContain(substring)`
