@@ -231,7 +231,7 @@ test('navigate through pages', async ({ player }) => {
   await nextButton.click();
   
   const secondItem = gui.locator(i => i.getDisplayName().includes('Arena'));
-  expect(secondItem.displayName()).toContain('Arena');
+  await expect.poll(() => secondItem.displayName()).toContain('Arena');
 });
 ```
 
