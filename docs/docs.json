@@ -1,36 +1,42 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
   "name": "Plugwright",
   "colors": {
     "primary": "#22ff88",
     "light": "#22ff88",
     "dark": "#22ff88"
   },
-  "topbarCtaButton": {
-    "name": "GitHub",
-    "url": "https://github.com/Drownek/plugwright"
-  },
-  "navigation": [
-    {
-      "group": "Get Started",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "configuration"
-      ]
-    },
-    {
-      "group": "Documentation",
-      "pages": [
-        "core-concepts",
-        "writing-tests",
-        "gui-testing",
-        "matchers",
-        "test-filtering",
-        "examples",
-        "ci-cd",
-        "api-reference"
-      ]
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/Drownek/plugwright"
     }
-  ]
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "configuration"
+        ]
+      },
+      {
+        "group": "Documentation",
+        "pages": [
+          "core-concepts",
+          "writing-tests",
+          "gui-testing",
+          "matchers",
+          "test-filtering",
+          "examples",
+          "ci-cd",
+          "api-reference"
+        ]
+      }
+    ]
+  }
 }
