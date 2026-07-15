@@ -51,9 +51,12 @@ const item = gui.locator(i => i.name === 'diamond');
 
 Gets a live handle to a GUI matching the title pattern.
 
-**Parameters:**
-- `title` (string | RegExp) - Pattern to match GUI title
-- `timeout` (number, optional) - Max wait time in ms (default: 5000)
+<ParamField path="title" type="string | RegExp" required>
+  Pattern to match GUI title.
+</ParamField>
+<ParamField path="timeout" type="number">
+  Max wait time in ms (default: 5000).
+</ParamField>
 
 **Returns:** `LiveGuiHandle`
 
@@ -73,8 +76,9 @@ const guiTimeout = await player.gui({ title: 'Admin', timeout: 10000 });
 
 Creates a locator for items matching the predicate.
 
-**Parameters:**
-- `predicate` (function) - `(item: ItemWrapper) => boolean`
+<ParamField path="predicate" type="function" required>
+  `(item: ItemWrapper) => boolean`
+</ParamField>
 
 **Returns:** `GuiItemLocator`
 
@@ -99,8 +103,9 @@ const complexItem = gui.locator(i =>
 
 Clicks the located item with automatic retry.
 
-**Parameters:**
-- `options.timeout` (number, optional) - Max wait time (default: 5000ms)
+<ParamField path="options.timeout" type="number">
+  Max wait time in ms (default: 5000ms).
+</ParamField>
 
 **Examples:**
 ```javascript
@@ -135,10 +140,15 @@ console.log(lore); // "From: 2024-01-01 To: 2024-01-02"
 
 Asserts that a locator's item contains specific lore text, with automatic retry.
 
-**Parameters:**
-- `text` (string) - Text that should appear in lore
-- `options.timeout` (number, optional) - Max wait time (default: 5000ms)
-- `options.pollingRate` (number, optional) - Check interval (default: 100ms)
+<ParamField path="text" type="string" required>
+  Text that should appear in lore.
+</ParamField>
+<ParamField path="options.timeout" type="number">
+  Max wait time in ms (default: 5000ms).
+</ParamField>
+<ParamField path="options.pollingRate" type="number">
+  Check interval in ms (default: 100ms).
+</ParamField>
 
 **Examples:**
 ```javascript
@@ -258,8 +268,9 @@ await player.deOp();
 
 Changes the player's game mode.
 
-**Parameters:**
-- `mode` - 'survival' | 'creative' | 'adventure' | 'spectator'
+<ParamField path="mode" type="string" required>
+  'survival' | 'creative' | 'adventure' | 'spectator'
+</ParamField>
 
 ```javascript
 await player.setGameMode('creative');
@@ -283,16 +294,20 @@ await player.giveItem('diamond', 64);
 
 ## Legacy API (Deprecated)
 
-The following methods are deprecated. Use the modern API instead.
+<Warning>
+  The following methods are deprecated. Use the modern API instead.
 
-- `player.waitForGui(guiMatcher, options?)` -> Use `player.gui({ title })`
-- `gui.findItem(predicate)` -> Use `gui.locator(predicate)`
-- `gui.clickItem(predicate)` -> Use `gui.locator(predicate).click()`
+  - `player.waitForGui(guiMatcher, options?)` -> Use `player.gui({ title })`
+  - `gui.findItem(predicate)` -> Use `gui.locator(predicate)`
+  - `gui.clickItem(predicate)` -> Use `gui.locator(predicate).click()`
+</Warning>
 
 ## Tips
 
-- GUI operations are async - always use `await`
-- Locators are reactive - they re-query on each use
-- Use `expect(locator).toHaveLore()` for dynamic content
-- Custom display names differ from Minecraft item names
-- Check logs if GUI doesn't open - the command might have failed
+<Tip>
+  - GUI operations are async - always use `await`
+  - Locators are reactive - they re-query on each use
+  - Use `expect(locator).toHaveLore()` for dynamic content
+  - Custom display names differ from Minecraft item names
+  - Check logs if GUI doesn't open - the command might have failed
+</Tip>

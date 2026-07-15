@@ -9,26 +9,40 @@ The `player` or `bot` object represents a real Minecraft client connected to the
 
 ### Methods
 
-- **`player.chat(message: string)`**
-  Sends a chat message or command.
-  ```javascript
-  player.chat('/spawn');
-  ```
+#### `player.chat(message)`
 
-- **`player.gui(options: { title: string | RegExp })`**
-  Waits for a GUI to open matching the title and returns a live handle.
-  ```javascript
-  const gui = await player.gui({ title: 'Shop' });
-  const button = gui.locator(i => i.getDisplayName().includes('Confirm'));
-  ```
+Sends a chat message or command.
+
+<ParamField path="message" type="string" required>
+  The message or command to send.
+</ParamField>
+
+```javascript
+player.chat('/spawn');
+```
+
+#### `player.gui(options)`
+
+Waits for a GUI to open matching the title and returns a live handle.
+
+<ParamField path="options.title" type="string | RegExp" required>
+  Pattern to match GUI title.
+</ParamField>
+
+```javascript
+const gui = await player.gui({ title: 'Shop' });
+const button = gui.locator(i => i.getDisplayName().includes('Confirm'));
+```
 
 ### Properties
 
-- **`player.inventory`**
+<ResponseField name="inventory" type="Inventory">
   Access the player's current inventory state.
-  
-- **`player.username`**
+</ResponseField>
+
+<ResponseField name="username" type="string">
   The randomly generated or assigned name of the bot.
+</ResponseField>
 
 ## `server` Object
 
@@ -36,8 +50,14 @@ The `server` object gives you control over the backend Minecraft server.
 
 ### Methods
 
-- **`server.execute(command: string)`**
-  Executes a command from the server console.
-  ```javascript
-  server.execute(`give ${player.username} diamond 64`);
-  ```
+#### `server.execute(command)`
+
+Executes a command from the server console.
+
+<ParamField path="command" type="string" required>
+  The console command to execute.
+</ParamField>
+
+```javascript
+server.execute(`give ${player.username} diamond 64`);
+```

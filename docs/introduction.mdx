@@ -12,21 +12,28 @@ MockBukkit has limited support for GUIs and lacks NMS support. We created Plugwr
 
 Plugwright offers a unique set of features tailored for modern Minecraft plugin development:
 
-### 🤖 Real Player Bots
-Instead of mocking the server, Plugwright spawns actual Mineflayer bots that connect to your local test server. They can move, chat, click blocks, and interact with your GUIs exactly like a real human player.
-
-### 📦 Zero Configuration Server
-The framework automatically downloads the correct Paper server JAR for your specified version, sets it up, accepts the EULA, and loads your plugin before running tests. When tests are done, the environment is cleanly wiped (or cached).
-
-### ⚡ Live GUI Locators
-Tired of asserting raw inventory slots? Use reactive locators to find items by name, lore, or material. The locators automatically poll for updates, making your tests flake-free even if the server lags.
-
-### 🛡️ Type-Safe API
-Written in TypeScript, the Plugwright test runner provides excellent IDE autocompletion for matchers, server actions, and bot interactions.
-
-### 🔄 CI/CD Ready
-Designed to run flawlessly in GitHub Actions or any other CI pipeline. It takes less than 5 minutes to set up automated PR checks that test your plugin against a real server.
+<CardGroup cols={2}>
+  <Card title="Real Player Bots" icon="robot">
+    Instead of mocking the server, Plugwright spawns actual Mineflayer bots that connect to your local test server. They can move, chat, click blocks, and interact with your GUIs exactly like a real human player.
+  </Card>
+  <Card title="Zero Configuration Server" icon="server">
+    The framework automatically downloads the correct Paper server JAR for your specified version, sets it up, accepts the EULA, and loads your plugin before running tests. When tests are done, the environment is cleanly wiped (or cached).
+  </Card>
+  <Card title="Live GUI Locators" icon="bolt">
+    Tired of asserting raw inventory slots? Use reactive locators to find items by name, lore, or material. The locators automatically poll for updates, making your tests flake-free even if the server lags.
+  </Card>
+  <Card title="Type-Safe API" icon="shield-check">
+    Written in TypeScript, the Plugwright test runner provides excellent IDE autocompletion for matchers, server actions, and bot interactions.
+  </Card>
+  <Card title="CI/CD Ready" icon="arrows-rotate">
+    Designed to run flawlessly in GitHub Actions or any other CI pipeline. It takes less than 5 minutes to set up automated PR checks that test your plugin against a real server.
+  </Card>
+</CardGroup>
 
 ## Next Steps
 
-Ready to get started? Check out the [Quick Start](/quickstart) guide to run your first test in less than 5 minutes!
+Ready to get started?
+
+<Card title="Quick Start" icon="rocket" href="/quickstart">
+  Check out the Quick Start guide to run your first test in less than 5 minutes!
+</Card>

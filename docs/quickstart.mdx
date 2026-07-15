@@ -3,39 +3,41 @@ title: "Quick Start"
 description: "Start running your first test in less than 5 minutes."
 ---
 
-## Prerequisites
+<Steps>
+  <Step title="Prerequisites">
+    Before you begin, you need:
+    - **Java 17** or higher
+    - **Node.js** (for running the test runner)
+  </Step>
 
-Before you begin, you need:
-- **Java 17** or higher
-- **Node.js** (for running the test runner)
+  <Step title="Installation">
+    Add Plugwright to your `build.gradle.kts` file:
 
-## Installation
+    ```kotlin
+    plugins {
+        id("io.github.drownek.plugwright") version "2.0.2"
+    }
+    ```
+  </Step>
 
-Add Plugwright to your `build.gradle.kts` file:
+  <Step title="Initialization">
+    Run the init command to set up the default configuration and an example test in your project:
 
-```kotlin
-plugins {
-    id("io.github.drownek.plugwright") version "2.0.2"
-}
-```
+    ```bash
+    ./gradlew plugwrightInit
+    ```
+  </Step>
 
-## Initialization
+  <Step title="Your First Test">
+    Here's an example of the simplest test. Plugwright starts the server, connects a bot, and makes it type a command:
 
-Run the init command to set up the default configuration and an example test in your project:
+    ```javascript
+    import { expect, test } from '@drownek/plugwright';
 
-```bash
-./gradlew plugwrightInit
-```
-
-## Your First Test
-
-Here's an example of the simplest test. Plugwright starts the server, connects a bot, and makes it type a command:
-
-```javascript
-import { expect, test } from '@drownek/plugwright';
-
-test('help displays message', async ({ player }) => {
-  player.chat('/help');
-  await expect(player).toHaveReceivedMessage('Help');
-});
-```
+    test('help displays message', async ({ player }) => {
+      player.chat('/help');
+      await expect(player).toHaveReceivedMessage('Help');
+    });
+    ```
+  </Step>
+</Steps>

@@ -21,71 +21,51 @@ plugwright {
 
 ## Configuration Options
 
-### `minecraftVersion`
-
-**Type:** `Property<String>`  
-**Required:** Yes  
-**Default:** `"1.19.4"`
-
-The Minecraft version to use for testing.
+<ParamField path="minecraftVersion" type="Property<String>" required>
+  The Minecraft version to use for testing. Default is `"1.19.4"`.
+</ParamField>
 
 ```kotlin
 minecraftVersion.set("1.19.4")
 minecraftVersion.set("1.20.1")
 ```
 
-### `runDir`
-
-**Type:** `DirectoryProperty`  
-**Required:** No  
-**Default:** `project.layout.projectDirectory.dir("run")`
-
-Directory where the test server will be located.
+<ParamField path="runDir" type="DirectoryProperty">
+  Directory where the test server will be located. Default is `project.layout.projectDirectory.dir("run")`.
+</ParamField>
 
 ```kotlin
 runDir.set(file("run"))
 runDir.set(file("test-server"))
 ```
 
-### `testsDir`
-
-**Type:** `DirectoryProperty`  
-**Required:** No  
-**Default:** `file("src/test/e2e")`
-
-Directory containing test files.
+<ParamField path="testsDir" type="DirectoryProperty">
+  Directory containing test files. Default is `file("src/test/e2e")`.
+</ParamField>
 
 ```kotlin
 testsDir.set(file("src/test/e2e"))
 testsDir.set(file("tests/integration"))
 ```
 
-### `acceptEula`
-
-**Type:** `Property<Boolean>`  
-**Required:** No  
-**Default:** `true`
-
-Automatically accept Minecraft EULA, if you agree to the [Minecraft EULA](https://www.minecraft.net/en-us/eula).
+<ParamField path="acceptEula" type="Property<Boolean>">
+  Automatically accept Minecraft EULA, if you agree to the [Minecraft EULA](https://www.minecraft.net/en-us/eula). Default is `true`.
+</ParamField>
 
 ```kotlin
 acceptEula.set(true)
 ```
 
-### `cleanExcludePatterns`
+<ParamField path="cleanExcludePatterns" type="ListProperty<String>">
+  Configures which files or folders in the `runDir` should **not** be deleted when the `plugwrightClean` task runs. This is useful for preserving the server JAR, dependency caches, or other persistent data between test runs. Default is `listOf("server.jar", "cache", "libraries")`.
 
-**Type:** `ListProperty<String>`  
-**Required:** No  
-**Default:** `listOf("server.jar", "cache", "libraries")`
+  By default, the cleanup preserves:
+  - `server.jar` - The Paper server executable
+  - `cache` - Minecraft/Paper cache folder
+  - `libraries` - Server dependencies
 
-Configures which files or folders in the `runDir` should **not** be deleted when the `plugwrightClean` task runs. This is useful for preserving the server JAR, dependency caches, or other persistent data between test runs.
-
-By default, the cleanup preserves:
-- `server.jar` - The Paper server executable
-- `cache` - Minecraft/Paper cache folder
-- `libraries` - Server dependencies
-
-Everything else in the run directory will be deleted to ensure a clean test environment.
+  Everything else in the run directory will be deleted to ensure a clean test environment.
+</ParamField>
 
 ```kotlin
 // Custom exclusions - add additional files to preserve
@@ -96,24 +76,17 @@ cleanExcludePatterns.set(listOf(
 ))
 ```
 
-### `useExternalPluginsOnly`
-
-**Type:** `Property<Boolean>`  
-**Required:** No  
-**Default:** `false`
-
-Whether to use only externally downloaded plugins instead of building the project plugin. When true, the `plugwrightTest` task will not depend on jar/shadowJar/reobfJar tasks. Useful when running E2E tests with plugins downloaded from external sources only.
+<ParamField path="useExternalPluginsOnly" type="Property<Boolean>">
+  Whether to use only externally downloaded plugins instead of building the project plugin. When true, the `plugwrightTest` task will not depend on jar/shadowJar/reobfJar tasks. Useful when running E2E tests with plugins downloaded from external sources only. Default is `false`.
+</ParamField>
 
 ```kotlin
 useExternalPluginsOnly.set(true)
 ```
 
-### `downloadPlugins`
-
-**Type:** `Action<PluginDownloadSpec>`
-**Required:** No
-
-Download external plugins (like dependencies) before starting the server.
+<ParamField path="downloadPlugins" type="Action<PluginDownloadSpec>">
+  Download external plugins (like dependencies) before starting the server.
+</ParamField>
 
 ```kotlin
 plugwright {
@@ -123,13 +96,9 @@ plugwright {
 }
 ```
 
-### `jvmArgs`
-
-**Type:** `ListProperty<String>`  
-**Required:** No  
-**Default:** `listOf("-Xmx2G")`
-
-Arguments to pass to the Java virtual machine when starting the test server.
+<ParamField path="jvmArgs" type="ListProperty<String>">
+  Arguments to pass to the Java virtual machine when starting the test server. Default is `listOf("-Xmx2G")`.
+</ParamField>
 
 ```kotlin
 plugwright {
@@ -137,12 +106,9 @@ plugwright {
 }
 ```
 
-### `writeFiles`
-
-**Type:** `Action<RunDirFileSpec>`  
-**Required:** No
-
-Stage files into the run directory before the server starts. You can provide inline text content or copy from an existing local file. Paths are relative to the run directory.
+<ParamField path="writeFiles" type="Action<RunDirFileSpec>">
+  Stage files into the run directory before the server starts. You can provide inline text content or copy from an existing local file. Paths are relative to the run directory.
+</ParamField>
 
 ```kotlin
 plugwright {
@@ -160,12 +126,9 @@ plugwright {
 
 ## Environment Variables
 
-### `PLUGWRIGHT_DEBUG`
-
-**Type:** `String` (e.g., `"1"`)  
-**Required:** No  
-
-Set `PLUGWRIGHT_DEBUG=1` in your environment to enable verbose debug logging during test execution. This is particularly useful for troubleshooting GUI flows and inspecting window open/close events from the bot.
+<ParamField path="PLUGWRIGHT_DEBUG" type="String">
+  Set `PLUGWRIGHT_DEBUG=1` in your environment to enable verbose debug logging during test execution. This is particularly useful for troubleshooting GUI flows and inspecting window open/close events from the bot.
+</ParamField>
 
 ## Complete Example
 
