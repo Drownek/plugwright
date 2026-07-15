@@ -8,7 +8,7 @@ description: "Understand the fundamentals of Plugwright."
 In Plugwright, every test runs with a pre-configured context. You use `test()` to define a scenario and `expect()` to make assertions.
 
 ```javascript
-import { test, expect } from '@plugwright/test';
+import { expect, test } from '@drownek/plugwright';
 
 test('Basic test', async ({ player }) => {
     // Your test logic here
@@ -21,10 +21,13 @@ Locators are your secret weapon. Plugwright allows you to precisely find and int
 
 ```javascript
 test('Click an item in GUI', async ({ player }) => {
-    await player.chat('/openmenu');
+    player.chat('/openmenu');
     
-    // Find an item named "Shop" in the GUI and click it
-    const shopItem = player.gui.locator('Shop');
+    // Wait for the GUI to open and get a live handle
+    const gui = await player.gui({ title: 'Menu' });
+    
+    // Find an item by its internal name or display name
+    const shopItem = gui.locator(i => i.getDisplayName().includes('Shop'));
     await shopItem.click();
     
     await expect(player).toHaveReceivedMessage('You opened the shop!');
@@ -36,9 +39,11 @@ test('Click an item in GUI', async ({ player }) => {
 Testing economy, trading, or PvP? You can easily spawn multiple bots to test interactions between players.
 
 ```javascript
-test('Players can trade', async ({ bot1, bot2 }) => {
-    await bot1.chat(`/pay ${bot2.name} 100`);
+test('Players can trade', async ({ player, createPlayer }) => {
+    const friend = await createPlayer({ username: 'TraderBot' });
     
-    await expect(bot2).toHaveReceivedMessage('You received 100 coins!');
+    player.chat(`/pay ${friend.username} 100`);
+    
+    await expect(friend).toHaveReceivedMessage('You received 100 coins!');
 });
 ```

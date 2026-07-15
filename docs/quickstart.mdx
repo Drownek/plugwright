@@ -15,7 +15,7 @@ Add Plugwright to your `build.gradle.kts` file:
 
 ```kotlin
 plugins {
-    id("dev.plugwright") version "1.0.0"
+    id("io.github.drownek.plugwright") version "2.0.2"
 }
 ```
 
@@ -32,10 +32,10 @@ Run the init command to set up the default configuration and an example test in 
 Here's an example of the simplest test. Plugwright starts the server, connects a bot, and makes it type a command:
 
 ```javascript
-import { test, expect } from '@plugwright/test';
+import { expect, test } from '@drownek/plugwright';
 
-test('Player can run /help command', async ({ player }) => {
-    await player.chat('/help');
-    await expect(player).toHaveReceivedMessage('Help Menu:');
+test('help displays message', async ({ player }) => {
+  player.chat('/help');
+  await expect(player).toHaveReceivedMessage('Help');
 });
 ```
