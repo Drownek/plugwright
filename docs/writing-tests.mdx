@@ -23,7 +23,6 @@ Create `src/test/e2e/first.spec.js`:
 import { test, expect } from '@drownek/plugwright';
 
 test('player receives welcome message', async ({ player }) => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
   await expect(player).toHaveReceivedMessage('Welcome');
 });
 ```
@@ -74,7 +73,6 @@ test('player inventory has starter items', async ({ player }) => {
 
 ```javascript
 test('server executes commands', async ({ player, server }) => {
-  await player.makeOp();
   server.execute(`give ${player.username} diamond 64`);
   await expect(player).toContainItem('diamond');
 });
@@ -86,7 +84,7 @@ test('server executes commands', async ({ player, server }) => {
 
 Each test receives a context object with:
 
-- `player` - The Mineflayer bot instance
+- `player` - The PlayerWrapper instance managing the bot
 - `server` - Server control interface
 
 ### Player Actions
@@ -132,7 +130,7 @@ test('advanced waiting', async ({ player }) => {
 3. **Wait for conditions** - Use assertions that auto-retry
 4. **Test one thing** - Each test should verify one behavior
 5. **Check server logs** - They appear in console during test runs
-6. **Add delays when needed** - Use `setTimeout` for timing-dependent tests
+6. **Add delays when needed** - Use the built-in `sleep()` utility for timing-dependent tests
 
 ## Tips
 
