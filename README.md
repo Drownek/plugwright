@@ -73,8 +73,6 @@ plugwright {
 ./gradlew plugwrightTest
 ```
 
-See the [Getting Started](https://github.com/Drownek/plugwright/wiki/Getting-Started) guide for setup details.
-
 > **💡 Want to see a working example?** Check out the [example_plugin](./example_plugin) directory in this repository.
 
 ## Why Plugwright vs MockBukkit?
