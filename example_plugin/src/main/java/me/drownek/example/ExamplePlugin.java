@@ -19,6 +19,7 @@ public final class ExamplePlugin extends JavaPlugin implements CommandExecutor, 
     @Override
     public void onEnable() {
         this.getCommand("example").setExecutor(this);
+        this.getCommand("warps").setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
     }
 
@@ -26,6 +27,13 @@ public final class ExamplePlugin extends JavaPlugin implements CommandExecutor, 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("example.gui-settings")) {
             sender.sendMessage("You don't have permission to execute this command! (example) (MISSING_PERMISSIONS)");
+            return true;
+        }
+
+        if (command.getName().equalsIgnoreCase("warps")) {
+            if (sender instanceof Player player) {
+                openWarps(player, 1);
+            }
             return true;
         }
 
@@ -39,6 +47,32 @@ public final class ExamplePlugin extends JavaPlugin implements CommandExecutor, 
         }
 
         return false;
+    }
+
+    private void openWarps(Player player, int page) {
+        Inventory gui = Bukkit.createInventory(null, 9, "Warps");
+
+        if (page == 1) {
+            ItemStack spawn = new ItemStack(Material.COMPASS);
+            ItemMeta spawnMeta = spawn.getItemMeta();
+            spawnMeta.setDisplayName("Spawn");
+            spawn.setItemMeta(spawnMeta);
+            gui.setItem(0, spawn);
+
+            ItemStack arrow = new ItemStack(Material.ARROW);
+            ItemMeta arrowMeta = arrow.getItemMeta();
+            arrowMeta.setDisplayName("arrow");
+            arrow.setItemMeta(arrowMeta);
+            gui.setItem(8, arrow);
+        } else if (page == 2) {
+            ItemStack arena = new ItemStack(Material.DIAMOND_SWORD);
+            ItemMeta arenaMeta = arena.getItemMeta();
+            arenaMeta.setDisplayName("Arena");
+            arena.setItemMeta(arenaMeta);
+            gui.setItem(0, arena);
+        }
+
+        player.openInventory(gui);
     }
 
     private void openGuiSettings(Player player) {
@@ -62,6 +96,17 @@ public final class ExamplePlugin extends JavaPlugin implements CommandExecutor, 
         }
 
         String title = event.getView().getTitle();
+        if (title.equals("Warps")) {
+            event.setCancelled(true);
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem == null) return;
+            ItemMeta meta = clickedItem.getItemMeta();
+            if (meta != null && meta.hasDisplayName() && meta.getDisplayName().equals("arrow")) {
+                openWarps(player, 2);
+            }
+            return;
+        }
+
         if (!title.equals("guiSettings")) {
             return;
         }

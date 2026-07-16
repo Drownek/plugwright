@@ -27,6 +27,9 @@ bukkit {
         register("example") {
             description = "Example command for plugwright testing"
         }
+        register("warps") {
+            description = "Warps paginated GUI"
+        }
     }
 }
 
