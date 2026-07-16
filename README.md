@@ -8,6 +8,8 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaSc
 
 ![Showcase](https://github.com/user-attachments/assets/0272a6d9-f9ab-4486-8bf3-ee5909a10ee9)
 
+> 👉 **[Read the full documentation at plugwright.dev](https://plugwright.dev)**
+
 
 > [!WARNING]
 > **Migration from Paperwright (v1.x to v2.0)**
@@ -91,67 +93,9 @@ See the [Getting Started](https://github.com/Drownek/plugwright/wiki/Getting-Sta
 
 > **💡 Tip:** Plugwright and MockBukkit work well together. MockBukkit for fast unit tests; Plugwright for end-to-end tests that verify behavior on a real server.
 
-## Examples
+## Continuous Integration (CI)
 
-### Basic command test
-
-```typescript
-import { expect, test } from '@drownek/plugwright';
-
-test('help displays message', async ({ player }) => {
-  player.chat('/help');
-  await expect(player).toHaveReceivedMessage('Help');
-});
-```
-
-### GUI interaction
-
-```typescript
-test('admin can interact with gui', async ({ player }) => {
-  await player.makeOp();
-
-  player.chat('/example gui-settings');
-  const gui = await player.gui({ title: 'guiSettings' });
-
-  await gui.locator(item => item.getDisplayName().includes('guiItemInfo')).click();
-  await expect(player).toHaveReceivedMessage('You clicked on item');
-});
-```
-
-### Multi-bot testing
-
-```typescript
-test('multi-bot teleportation', async ({ player, createPlayer }) => {
-  await player.makeOp();
-  const friend = await createPlayer({ username: 'FriendBot' });
-
-  await friend.teleport(100, 100, 100);
-  player.chat(`/tp ${player.username} ${friend.username}`);
-
-  await expect(player).toBeNear(100, 100, 100, { tolerance: 2 });
-});
-```
-
-### Player actions
-
-```typescript
-test('teleport player', async ({ player }) => {
-  await player.teleport(123, 100, 321);
-  expect(player.bot.entity.position).toMatchObject({ x: 123.5, z: 321.5 });
-});
-
-test('give item to player', async ({ player }) => {
-  await player.giveItem('emerald', 5);
-  await expect(player).toContainItem('emerald', { count: 5 });
-});
-```
-
-See [Writing Tests](https://github.com/Drownek/plugwright/wiki/Writing-Tests) for more patterns and the full [Matchers Reference](https://github.com/Drownek/plugwright/wiki/Matchers-Reference).
-
-### Continuous Integration (CI)
-
-Setting up CI takes less than 5 minutes. Use the official [plugwright-action](https://github.com/Drownek/plugwright-action) to run your entire test suite.
-Just create a `.github/workflows/e2e.yml` file with the following content:
+Setting up CI takes less than 5 minutes. Use the official [plugwright-action](https://github.com/Drownek/plugwright-action) to run your entire test suite on every pull request.
 
 ```yaml
 name: E2E Tests
@@ -165,16 +109,11 @@ jobs:
       - uses: drownek/plugwright-action@v1
 ```
 
-## Documentation
+## Documentation & Examples
 
-See the [GitHub Wiki](../../wiki):
+For full examples on how to test **GUIs**, **multi-bot interactions**, **NMS**, and the complete **API Reference**, visit our official documentation site:
 
-- [Getting Started](../../wiki/Getting-Started) - Installation and setup
-- [Writing Tests](../../wiki/Writing-Tests) - Test examples and patterns
-- [Matchers Reference](../../wiki/Matchers-Reference) - All available assertions
-- [GUI Testing](../../wiki/GUI-Testing) - Testing inventory GUIs
-- [Configuration](../../wiki/Configuration) - Gradle plugin options
-- [Test Filtering](../../wiki/Test-Filtering) - Running specific tests
+> 👉 **[Read the full documentation at plugwright.dev](https://plugwright.dev)**
 
 ## License
 
