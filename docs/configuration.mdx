@@ -3,19 +3,42 @@ title: "Configuration"
 description: "Complete reference for Gradle plugin configuration options."
 ---
 
-## Basic Configuration
+## Example Configuration
 
 In your `build.gradle.kts`:
 
 ```kotlin
 plugwright {
+    // ---- Server Configuration ----
+    // Version of Paper server to download and run
     minecraftVersion.set("1.19.4")
+    
+    // Directory where the test server will be located
     runDir.set(file("run"))
-    testsDir.set(file("src/test/e2e"))
+    
+    // Automatically accept the Minecraft EULA
     acceptEula.set(true)
+    
+    // Pass custom JVM arguments to the test server
+    jvmArgs.set(listOf("-Xmx4G", "-XX:+UseG1GC"))
+    
+    // ---- Test Configuration ----
+    // Directory containing your .spec.js test files
+    testsDir.set(file("src/test/e2e"))
+    
+    // ---- Dependency / External Plugins ----
+    // Download external plugins before starting the server
     downloadPlugins {
         url("https://url.to/plugin.jar")
     }
+    
+    // ---- Cleanup Configuration ----
+    // Files to preserve when 'plugwrightClean' is executed
+    cleanExcludePatterns.set(listOf(
+        "server.jar",
+        "cache",
+        "libraries"
+    ))
 }
 ```
 
@@ -130,23 +153,4 @@ plugwright {
   Set `PLUGWRIGHT_DEBUG=1` in your environment to enable verbose debug logging during test execution. This is particularly useful for troubleshooting GUI flows and inspecting window open/close events from the bot.
 </ParamField>
 
-## Complete Example
 
-```kotlin
-plugwright {
-    // Server configuration
-    minecraftVersion.set("1.19.4")
-    runDir.set(file("run"))
-    acceptEula.set(true)
-    
-    // Test configuration
-    testsDir.set(file("src/test/e2e"))
-    
-    // Cleanup configuration
-    cleanExcludePatterns.set(listOf(
-        "server.jar",
-        "cache",
-        "libraries"
-    ))
-}
-```
