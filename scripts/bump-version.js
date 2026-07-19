@@ -30,7 +30,7 @@ function bumpVersionFiles(newVersion) {
 
     const gradleFiles = [
         "README.md",
-        "docs/Getting-Started.md",
+        "docs/quickstart.mdx",
         "example_plugin/build.gradle.kts",
     ];
 
@@ -98,7 +98,7 @@ async function main() {
         bumpVersionFiles(newVersion);
         changedSourceFiles.push(
             "README.md",
-            "docs/Getting-Started.md",
+            "docs/quickstart.mdx",
             "example_plugin/build.gradle.kts",
             "gradle-plugin/src/main/kotlin/me/drownek/plugwright/PlugwrightPlugin.kt",
         );
