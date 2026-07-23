@@ -79,6 +79,8 @@ class PlugwrightPlugin : Plugin<Project> {
             acceptEula.set(extension.acceptEula)
             pluginUrls.set(extension.pluginUrls)
             runDirFiles.set(extension.runDirFiles)
+            nodeVersion.set(extension.nodeVersion)
+            downloadNode.set(extension.downloadNode)
 
             // Support command line properties for filtering
             if (project.hasProperty("testFiles")) {
@@ -126,6 +128,8 @@ class PlugwrightPlugin : Plugin<Project> {
             acceptEula.set(extension.acceptEula)
             pluginUrls.set(extension.pluginUrls)
             runDirFiles.set(extension.runDirFiles)
+            nodeVersion.set(extension.nodeVersion)
+            downloadNode.set(extension.downloadNode)
 
             serverJarPath.set(
                 extension.runDir.map { runDir ->
@@ -254,13 +258,14 @@ class PlugwrightPlugin : Plugin<Project> {
                 }
 
                 project.logger.lifecycle("Executing 'npm install' in ${targetDir.absolutePath}...")
-                val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-                val npmCommand = if (isWindows) "npm.cmd" else "npm"
+                val nodePaths = NodeManager.getOrDownloadNode(project, extension.nodeVersion.get(), extension.downloadNode.get())
 
                 try {
+                    val isWin = System.getProperty("os.name").lowercase().contains("windows")
+                    val cmd = if (isWin) listOf("cmd", "/c", nodePaths.npm, "install") else listOf(nodePaths.npm, "install")
                     val execResult = project.exec {
                         workingDir = targetDir
-                        commandLine = listOf(npmCommand, "install")
+                        commandLine = cmd
                         isIgnoreExitValue = true
                     }
 

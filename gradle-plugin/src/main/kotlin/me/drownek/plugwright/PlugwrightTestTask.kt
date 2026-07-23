@@ -26,6 +26,7 @@ abstract class PlugwrightTestTask : AbstractPlugwrightTask() {
 
     @TaskAction
     fun runTests() {
+        val nodePaths = NodeManager.getOrDownloadNode(project, nodeVersion.get(), downloadNode.get())
         prepareServerEnvironment()
 
         val serverJar = serverJarPath.get()
@@ -50,14 +51,14 @@ abstract class PlugwrightTestTask : AbstractPlugwrightTask() {
         // Install dependencies if needed
         if (!File(userTestsDirectory, "node_modules").exists()) {
             logger.lifecycle("Installing Node.js dependencies...")
-            runCommand(userTestsDirectory, "npm", "install")
+            runCommand(userTestsDirectory, nodePaths.npm, "install")
         }
 
         // Build TypeScript tests if tsconfig.json exists
         val tsconfigFile = File(userTestsDirectory, "tsconfig.json")
         if (tsconfigFile.exists()) {
             logger.lifecycle("TypeScript config found, compiling tests...")
-            runCommand(userTestsDirectory, "npm", "run", "build")
+            runCommand(userTestsDirectory, nodePaths.npm, "run", "build")
         } else {
             logger.lifecycle("No TypeScript config found, running JavaScript tests directly")
         }
@@ -105,7 +106,7 @@ abstract class PlugwrightTestTask : AbstractPlugwrightTask() {
 
         runCommand(
             userTestsDirectory, 
-            "node", "node_modules/@drownek/plugwright/dist/cli.js",
+            nodePaths.node, "node_modules/@drownek/plugwright/dist/cli.js",
             env = envMap
         )
         

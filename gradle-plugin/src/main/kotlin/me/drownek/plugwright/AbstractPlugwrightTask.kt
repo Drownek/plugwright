@@ -50,6 +50,12 @@ abstract class AbstractPlugwrightTask : DefaultTask() {
     @get:Optional
     abstract val runDirFiles: ListProperty<PlugwrightExtension.RunDirFile>
 
+    @get:Input
+    abstract val nodeVersion: Property<String>
+
+    @get:Input
+    abstract val downloadNode: Property<Boolean>
+
     protected fun prepareServerEnvironment(): File {
         val serverJar = serverJarPath.get()
         val serverDirectory = serverDir.get()
@@ -359,7 +365,8 @@ abstract class AbstractPlugwrightTask : DefaultTask() {
 
     protected fun runCommand(dir: File, vararg command: String, env: Map<String, String> = emptyMap(), interactive: Boolean = false, onStdoutLine: ((String) -> Unit)? = null) {
         val isWindows = System.getProperty("os.name").lowercase().contains("win")
-        val cmd = if (isWindows && (command[0] == "npm" || command[0] == "node")) {
+        val cmdName = File(command[0]).nameWithoutExtension.lowercase()
+        val cmd = if (isWindows && (cmdName == "npm" || cmdName == "node")) {
             listOf("cmd", "/c") + command
         } else {
             command.toList()
