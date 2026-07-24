@@ -104,9 +104,18 @@ abstract class PlugwrightTestTask : AbstractPlugwrightTask() {
             logger.lifecycle("Test names filter: $nameFilter")
         }
 
+        var cliJsPath = "node_modules/@drownek/plugwright/dist/cli.js"
+        val cliJsFile = File(userTestsDirectory, cliJsPath)
+        if (!cliJsFile.exists()) {
+            val fallbackFile = File(userTestsDirectory, "../../../../runner-package/dist/cli.js")
+            if (fallbackFile.exists()) {
+                cliJsPath = fallbackFile.absolutePath
+            }
+        }
+
         runCommand(
             userTestsDirectory, 
-            nodePaths.node, "node_modules/@drownek/plugwright/dist/cli.js",
+            nodePaths.node, cliJsPath,
             env = envMap
         )
         
