@@ -117,7 +117,7 @@ class PlugwrightCorePlugin : Plugin<Project> {
     private fun wireEnvironments(
         project: Project,
         extension: PlugwrightExtension,
-        plugwrightCompileTests: org.gradle.api.tasks.TaskProvider<PlugwrightCompileTestsTask>,
+        plugwrightCompileTests: TaskProvider<PlugwrightCompileTestsTask>,
         defaultNodeInstallDir: File
     ) {
         // No environments { } block: fold the deprecated flat properties into one implicit
@@ -178,7 +178,6 @@ class PlugwrightCorePlugin : Plugin<Project> {
                 project, envName, envName == primaryName, projectPluginJarProvider,
                 extension.testsDir.map { it.asFile }, layout, extension, defaultNodeInstallDir
             )
-            val journalFilePath = project.layout.buildDirectory.file("plugwright/$envName-journal.jsonl").get().asFile
             val modePackages = mode.runnerPackages(entry.spec)
 
             // The package a mode names an export in is the one holding its environment factory.
@@ -202,7 +201,6 @@ class PlugwrightCorePlugin : Plugin<Project> {
                 configFile.set(project.layout.buildDirectory.file("tmp/plugwright/$envName.json"))
                 jsonReportFile.set(reportsDir.map { it.file("$envName.json") })
                 junitReportFile.set(reportsDir.map { it.dir("junit").file("$envName.xml") })
-                journalFile.set(journalFilePath)
                 nodeVersion.set(extension.nodeVersion)
                 downloadNode.set(extension.downloadNode)
                 nodeInstallDir.set(defaultNodeInstallDir)
@@ -227,7 +225,7 @@ class PlugwrightCorePlugin : Plugin<Project> {
 
             val environmentConfigProvider = ctx.environmentConfigProvider
                 ?: project.provider { ConfigNodeBuilder().apply { mode.serialize(entry.spec, this) }.build() }
-            val pluginConfigsProvider = (ctx.pluginConfigsProvider ?: project.provider { emptyList<PluginRef>() })
+            val pluginConfigsProvider = (ctx.pluginConfigsProvider ?: project.provider { emptyList() })
                 .map { refs -> refs.map { resolveWorkspacePlugin(it, layout) } }
 
             // A plugin declared by npm name is installed alongside the environment's own
@@ -257,7 +255,6 @@ class PlugwrightCorePlugin : Plugin<Project> {
                     excludeTests = entry.spec.excludeTests.get(),
                     environmentConfig = environmentConfigProvider,
                     pluginConfigs = pluginConfigsProvider,
-                    journalFile = journalFilePath,
                     runtimePackage = runtimeRef?.name,
                     runtimeExport = runtimeRef?.export,
                 )
