@@ -84,6 +84,8 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
             pluginJar.set(ctx.projectPluginJar)
             pluginUrls.set(spec.pluginUrls)
             runDirFiles.set(spec.runDirFiles)
+            rconPort.set(spec.rconPort)
+            rconPassword.set(spec.rconPassword)
         }
 
         val javaLauncherProvider: Provider<JavaLauncher>? = run {

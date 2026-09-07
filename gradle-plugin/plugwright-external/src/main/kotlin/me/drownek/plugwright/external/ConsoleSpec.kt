@@ -14,18 +14,12 @@ sealed class ConsoleChannelSpec {
         val port: Property<Int> = objects.property(Int::class.java).convention(25575)
         val password: Property<SecretRef> = objects.property(SecretRef::class.java)
     }
-
-    /** `console { adminBot("StaffBot") { password.set(secret.env("STAFF_PASS")) } }`. A second
-     *  mineflayer bot with staff rights, sending commands through chat. */
-    class AdminBot(val username: String, objects: ObjectFactory) : ConsoleChannelSpec() {
-        val password: Property<SecretRef> = objects.property(SecretRef::class.java)
-    }
 }
 
 /**
- * `console { rcon { ... }; adminBot("Name") { ... } }`.
+ * `console { rcon { ... } }`.
  *
- * Declaring neither channel is valid — the environment just runs without a console, and any
+ * Declaring no channel is valid — the environment just runs without a console, and any
  * test requiring one is skipped and reported as such.
  */
 class ConsoleSpec(private val objects: ObjectFactory) {
@@ -33,9 +27,5 @@ class ConsoleSpec(private val objects: ObjectFactory) {
 
     fun rcon(action: ConsoleChannelSpec.Rcon.() -> Unit) {
         channels.add(ConsoleChannelSpec.Rcon(objects).apply(action))
-    }
-
-    fun adminBot(username: String, action: ConsoleChannelSpec.AdminBot.() -> Unit) {
-        channels.add(ConsoleChannelSpec.AdminBot(username, objects).apply(action))
     }
 }

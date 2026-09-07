@@ -49,8 +49,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
             when (channel) {
                 is ConsoleChannelSpec.Rcon ->
                     if (!channel.password.isPresent) ctx.error("console.rcon.password must be set")
-                is ConsoleChannelSpec.AdminBot ->
-                    if (!channel.password.isPresent) ctx.error("console.adminBot(\"${channel.username}\").password must be set")
             }
         }
     }
@@ -68,11 +66,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
                         is ConsoleChannelSpec.Rcon -> {
                             put("kind", "rcon")
                             put("port", channel.port.get())
-                            put("password", channel.password.get())
-                        }
-                        is ConsoleChannelSpec.AdminBot -> {
-                            put("kind", "adminBot")
-                            put("username", channel.username)
                             put("password", channel.password.get())
                         }
                     }
