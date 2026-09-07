@@ -136,7 +136,7 @@ class PlugwrightCorePlugin : Plugin<Project> {
         }
 
         val layout = PlugwrightLayout.of(extension.testsDir.get().asFile)
-        val projectPluginJarProvider = resolveProjectPluginJar(project, extension)
+        val projectPluginJarProvider = resolveProjectPluginJar(project)
         val validationProblems = mutableListOf<String>()
         validationProblems += extension.npm.toConfig().problems().map { "[npm] $it" }
         val reportsDir = project.layout.buildDirectory.dir("reports/plugwright")
@@ -312,11 +312,8 @@ class PlugwrightCorePlugin : Plugin<Project> {
     }
 
     /** The jar of the plugin under test, from `shadowJar` / `reobfJar` / `jar`. Absent when
-     *  the build asked for external plugins only, or when no jar-producing task exists. */
-    private fun resolveProjectPluginJar(project: Project, extension: PlugwrightExtension): Provider<File> {
-        if (extension.useExternalPluginsOnly.get()) {
-            return project.objects.property(File::class.java)
-        }
+     *  no jar-producing task exists. */
+    private fun resolveProjectPluginJar(project: Project): Provider<File> {
         val jarTask = when {
             project.tasks.findByName("shadowJar") != null -> project.tasks.named("shadowJar")
             project.tasks.findByName("reobfJar") != null -> project.tasks.named("reobfJar")

@@ -80,7 +80,10 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
             runDir.set(spec.runDir)
             minecraftVersion.set(spec.minecraftVersion)
             port.set(spec.port)
-            pluginJar.set(ctx.projectPluginJar)
+            pluginJar.set(spec.useExternalPluginsOnly.flatMap { externalOnly ->
+                if (externalOnly) project.objects.property(File::class.java)
+                else ctx.projectPluginJar
+            })
             pluginUrls.set(spec.pluginUrls)
             runDirFiles.set(spec.runDirFiles)
             rconPort.set(spec.rconPort)
