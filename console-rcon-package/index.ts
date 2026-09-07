@@ -29,5 +29,11 @@ export function rconConsole(config: RconConsoleConfig): ServerConsole {
         async execute(cmd: string, timeoutMs: number = 5000): Promise<string> {
             return connection.executeAndWait(cmd, timeoutMs);
         },
+
+        close(): void {
+            connection.disconnect();
+        }
     };
 }
+
+export { RconConnection };
