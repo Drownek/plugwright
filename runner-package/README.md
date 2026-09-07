@@ -41,7 +41,7 @@ The runner takes a config file describing one environment:
 npx plugwright --config build/tmp/plugwright/local.json
 ```
 
-The Gradle plugin writes that file, but nothing stops you from writing it yourself. `local` starts and stops its own Paper server; `external` connects to one that is already running, with an account pool, a console channel and authentication handled by a plugin. Two service modes exist for the second case: `--ping` checks that the server answers without running tests, and `--cleanup` replays outstanding cleanup work.
+The Gradle plugin writes that file, but nothing stops you from writing it yourself. `local` starts and stops its own Paper server; `external` connects to one that is already running, with an account pool, a console channel and authentication handled by a plugin. Two service modes exist for the second case: `--ping` checks that the server answers without running tests.
 
 ## Documentation
 

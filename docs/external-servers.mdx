@@ -21,7 +21,6 @@ environments {
 
         console {
             rcon { port.set(25575); password.set(secret.env("RCON_PASSWORD")) }
-            adminBot("StaffBot") { password.set(secret.env("STAFF_PASSWORD")) }
         }
 
         accounts {
@@ -56,7 +55,6 @@ Channels are probed in declaration order, and the first one that answers becomes
 | Channel | Output level | Notes |
 |---|---|---|
 | `rcon { }` | `responses` | Needs `enable-rcon=true` on the server. Installs `@plugwright/console-rcon` |
-| `adminBot("Name") { }` | `responses` | A second bot with staff rights that sends commands through chat |
 | stdio | `full` | `LocalMode` only — Plugwright owns the process |
 
 The output level matters more than it looks. `full` means the whole server log is readable, so `expect(server).toHaveReceivedMessage(...)` works. `responses` means you get back what the command printed and nothing else. A test that reads the server log should say so:
@@ -69,8 +67,6 @@ test('command is logged', { requires: ['consoleOutput:full'] }, async ({ server 
 ```
 
 Declaring no channel at all is valid. The environment runs without a console, and every test that requires one is skipped and reported as skipped.
-
-The admin bot connects through the same code path as a test bot, which means it goes through your authentication plugin too, and it connects before any test bot does.
 
 ## Accounts
 
