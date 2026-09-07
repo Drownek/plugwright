@@ -4,7 +4,7 @@ import type { Environment, EnvironmentCapabilities, BotConnectionOptions } from 
 import type { ServerConsole } from '../console.js';
 import type { LocalEnvironmentConfig } from '../config.js';
 import type { Session } from '../session.js';
-import { importOptionalPackage } from '../utils.js';
+import { rconConsole } from '../rcon/index.js';
 
 const CAPABILITIES: EnvironmentCapabilities = {
     console: true,
@@ -71,30 +71,10 @@ export class LocalEnvironment implements Environment {
     }
 
     /**
-     * Dynamically imports `@plugwright/console-rcon` and connects to the local server.
-     * This is the same import path `ExternalEnvironment.buildChannel` uses, so the
-     * protocol handling is shared.
+     * Connects to the local server via RCON.
      */
     private async _connectRcon(): Promise<void> {
-        const rconPackage = '@plugwright/console-rcon';
-        let mod: any;
-        try {
-            mod = await importOptionalPackage(rconPackage);
-        } catch (error) {
-            throw new Error(
-                'Local mode now uses RCON for command execution. The "@plugwright/console-rcon" package ' +
-                'must be installed alongside "@plugwright/runner". If you are using the Gradle plugin, ' +
-                'run a clean build to have it installed automatically.\n' +
-                `(${(error as Error).message})`
-            );
-        }
-
-        const factory = mod.rconConsole ?? mod.default;
-        if (typeof factory !== 'function') {
-            throw new Error('"@plugwright/console-rcon" has no "rconConsole" export');
-        }
-
-        const rconConsole: ServerConsole = factory({
+        const consoleInstance: ServerConsole = rconConsole({
             host: this.config.host ?? 'localhost',
             port: this.config.rconPort ?? 25575,
             password: this.config.rconPassword ?? 'plugwright',
@@ -105,8 +85,8 @@ export class LocalEnvironment implements Environment {
         let lastError: Error | null = null;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                if (await rconConsole.probe()) {
-                    this._rconConsole = rconConsole;
+                if (await consoleInstance.probe()) {
+                    this._rconConsole = consoleInstance;
                     console.log(pc.green(`[local] RCON connected (port ${this.config.rconPort ?? 25575})`));
                     return;
                 }

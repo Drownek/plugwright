@@ -54,7 +54,7 @@ Channels are probed in declaration order, and the first one that answers becomes
 
 | Channel | Output level | Notes |
 |---|---|---|
-| `rcon { }` | `responses` | Needs `enable-rcon=true` on the server. Installs `@plugwright/console-rcon` |
+| `rcon { }` | `responses` | Needs `enable-rcon=true` on the server |
 | stdio | `full` | `LocalMode` only — Plugwright owns the process |
 
 The output level matters more than it looks. `full` means the whole server log is readable, so `expect(server).toHaveReceivedMessage(...)` works. `responses` means you get back what the command printed and nothing else. A test that reads the server log should say so:

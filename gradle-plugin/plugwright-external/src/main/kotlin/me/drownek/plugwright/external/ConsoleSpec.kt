@@ -8,8 +8,7 @@ import org.gradle.api.provider.Property
  *  at runtime; the first one that connects becomes the session's console. */
 sealed class ConsoleChannelSpec {
 
-    /** `console { rcon { port.set(25575); password.set(secret.env("RCON_PASS")) } }`. Needs the
-     *  separate `@plugwright/console-rcon` runner package. */
+    /** `console { rcon { port.set(25575); password.set(secret.env("RCON_PASS")) } }`. */
     class Rcon(objects: ObjectFactory) : ConsoleChannelSpec() {
         val port: Property<Int> = objects.property(Int::class.java).convention(25575)
         val password: Property<SecretRef> = objects.property(SecretRef::class.java)

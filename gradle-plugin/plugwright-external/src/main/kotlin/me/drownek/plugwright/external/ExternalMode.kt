@@ -19,13 +19,9 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
     override fun createSpec(name: String, objects: ObjectFactory): ExternalEnvironmentSpec =
         ExternalEnvironmentSpec(name, objects)
 
-    override fun runnerPackages(spec: ExternalEnvironmentSpec): List<RunnerPackageRef> = buildList {
-        add(RunnerPackageRef("@plugwright/runner", export = "externalEnvironment"))
-        val needsRcon = spec.consoleSpec?.channels?.any { it is ConsoleChannelSpec.Rcon } == true
-        if (needsRcon) {
-            add(RunnerPackageRef("@plugwright/console-rcon", export = "rconConsole"))
-        }
-    }
+    override fun runnerPackages(spec: ExternalEnvironmentSpec): List<RunnerPackageRef> = listOf(
+        RunnerPackageRef("@plugwright/runner", export = "externalEnvironment")
+    )
 
     override fun validate(spec: ExternalEnvironmentSpec, ctx: ValidationContext) {
         if (!spec.host.isPresent || spec.host.get().isBlank()) {

@@ -1,5 +1,5 @@
-import type { ServerConsole } from '@plugwright/runner';
-import { RconConnection } from './lib/rcon-connection.js';
+import type { ServerConsole } from '../console.js';
+import { RconConnection } from './connection.js';
 
 export interface RconConsoleConfig {
     host: string;

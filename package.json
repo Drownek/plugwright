@@ -2,8 +2,8 @@
   "private": true,
   "scripts": {
     "bump": "node scripts/bump-version.js",
-    "install:packages": "npm ci --prefix runner-package && npm ci --prefix auth-authme-package && npm ci --prefix console-rcon-package",
-    "build:packages": "npm run build --prefix runner-package && npm run build --prefix auth-authme-package && npm run build --prefix console-rcon-package",
+    "install:packages": "npm ci --prefix runner-package && npm ci --prefix auth-authme-package",
+    "build:packages": "npm run build --prefix runner-package && npm run build --prefix auth-authme-package",
     "publish:packages": "node scripts/publish.js"
   }
 }
