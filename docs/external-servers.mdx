@@ -61,7 +61,7 @@ The output level matters more than it looks. `full` means the whole server log i
 
 ```ts
 test('command is logged', { requires: ['consoleOutput:full'] }, async ({ server }) => {
-  server.execute('say hello');
+  await server.execute('say hello');
   await expect(server).toHaveReceivedMessage('hello');
 });
 ```

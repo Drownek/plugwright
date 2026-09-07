@@ -52,7 +52,7 @@ test('player starts with default balance', async ({ player }) => {
 });
 
 test('player can purchase items', async ({ player, server }) => {
-  server.execute(`eco give ${player.username} 500`);
+  await server.execute(`eco give ${player.username} 500`);
   player.chat('/buy diamond');
   await expect(player).toHaveReceivedMessage('Purchased');
   await expect(player).toContainItem('diamond');
@@ -73,7 +73,7 @@ test('player inventory has starter items', async ({ player }) => {
 
 ```typescript
 test('server executes commands', async ({ player, server }) => {
-  server.execute(`give ${player.username} diamond 64`);
+  await server.execute(`give ${player.username} diamond 64`);
   await expect(player).toContainItem('diamond');
 });
 ```

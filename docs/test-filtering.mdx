@@ -60,8 +60,8 @@ Capability keys come from the environment's own report, after it has connected:
 A bare key is satisfied by anything other than `false`, `'none'` or an absent value. To demand one specific value, use `key:value`:
 
 ```ts
-test('command is logged', { requires: ['consoleOutput:full'] }, async ({ server }) => {
-    server.execute('say hello');
+test('console matters', { requires: ['consoleOutput:full'] }, async ({ server }) => {
+    await server.execute('say hello');
     await expect(server).toHaveReceivedMessage('hello');
 });
 ```
