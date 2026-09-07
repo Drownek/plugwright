@@ -104,7 +104,7 @@ export async function runTestSession(config: RunnerConfig = loadRunnerConfig()):
     // Must happen before the first spec file is imported — see PluginHost.registerMatchers.
     plugins.registerMatchers();
     // Wired before env.setup(): an environment's own console channel can be a bot that needs
-    // to authenticate during setup() (see AdminBotConsole), which goes through this same hook.
+    // to authenticate during setup(), which goes through this same hook.
     session.onPlayerCreate = (player, ctx) => plugins.onPlayerCreate(player, ctx);
 
     let exitCode = 0;

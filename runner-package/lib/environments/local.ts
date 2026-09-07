@@ -102,6 +102,7 @@ export class LocalEnvironment implements Environment {
 
         // RCON may need a moment after the server logs "Done" — retry a few times.
         const maxAttempts = 5;
+        let lastError: Error | null = null;
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 if (await rconConsole.probe()) {
@@ -110,19 +111,17 @@ export class LocalEnvironment implements Environment {
                     return;
                 }
             } catch (error) {
-                if (attempt === maxAttempts) {
-                    throw new Error(
-                        `RCON failed to connect to the local server after ${maxAttempts} attempts. ` +
-                        'Make sure enable-rcon=true is set in server.properties (the Gradle plugin does ' +
-                        `this automatically). (${(error as Error).message})`
-                    );
-                }
+                lastError = error as Error;
             }
             // Wait before retrying — RCON listener may start slightly after the game loop.
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        throw new Error('RCON probe returned false on all attempts');
+        throw new Error(
+            `RCON failed to connect to the local server after ${maxAttempts} attempts. ` +
+            'Make sure enable-rcon=true is set in server.properties (the Gradle plugin does ' +
+            `this automatically). ${lastError ? `(${lastError.message})` : ''}`
+        );
     }
 
     connection(): BotConnectionOptions {
@@ -139,6 +138,10 @@ export class LocalEnvironment implements Environment {
     }
 
     async teardown(): Promise<void> {
+        if (this._rconConsole?.close) {
+            await this._rconConsole.close();
+        }
+
         const serverProcess = this.serverProcess;
         if (!serverProcess) return;
 

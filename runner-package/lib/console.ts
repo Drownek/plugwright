@@ -1,7 +1,6 @@
 /**
  * A channel for sending admin commands to the server and reading its output.
- * `local` speaks to the Paper process over stdio; other channels (RCON, an
- * admin bot) are added by later modes.
+ * e.g., RCON or stdio.
  */
 export interface ServerConsole {
     readonly kind: 'stdio' | 'rcon';
@@ -10,4 +9,5 @@ export interface ServerConsole {
     readonly output: 'full' | 'responses' | 'none';
     probe(): Promise<boolean>;
     execute(cmd: string, timeoutMs?: number): Promise<string>;
+    close?(): void | Promise<void>;
 }

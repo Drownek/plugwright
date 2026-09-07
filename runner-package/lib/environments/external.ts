@@ -153,6 +153,9 @@ class ExternalEnvironment implements Environment {
 
     async teardown(): Promise<void> {
         // No lifecycle: the tested server isn't ours to stop.
+        if (this._console?.close) {
+            await this._console.close();
+        }
     }
 }
 
