@@ -89,7 +89,7 @@ That is a request for a specific identity, not for whatever is free, so the pool
 Most second bots don't need this. A test that just wants another player should call `createPlayer()` with no arguments and let the pool answer — a name is worth asking for when the identity is, because somebody provisioned that account with a permission group or a balance, or because the name came from somewhere outside the test.
 
 <Warning>
-A leased account comes back with the previous test's inventory, balance and op status. Nothing resets it for you. Reset what you can in a plugin's `beforeEach`, exclude what you can't, and treat `capabilities.freshState = false` as the honest description it is.
+A leased account comes back with the previous test's inventory, balance and op status. Nothing resets it for you. Reset what you can in a plugin's `beforeEach`, and exclude what you can't.
 </Warning>
 
 ## Numbered slots or fresh names
@@ -122,4 +122,4 @@ Connects, probes the console channels, leases one account and authenticates with
 
 
 
-After `setup()`, the environment reports what it actually supports. For `ExternalMode` that is: no fresh state, no server lifecycle, arbitrary usernames, and console plus op only if a console channel answered. Tests that declare `requires` are skipped against that list, with the reason in the report. See [Test Filtering](/test-filtering).
+After `setup()`, the environment reports what it actually supports. For `ExternalMode` that is: console plus op only if a console channel answered. Tests that declare `requires` are skipped against that list, with the reason in the report. See [Test Filtering](/test-filtering).

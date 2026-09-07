@@ -53,9 +53,6 @@ Capability keys come from the environment's own report, after it has connected:
 | `console` | boolean | Commands can be run at all |
 | `consoleOutput` | `full` / `responses` / `none` | Whole server log, only command answers, or nothing |
 | `op` | boolean | The environment can grant operator status |
-| `freshState` | boolean | Each test gets a clean world and a clean player |
-| `arbitraryUsernames` | boolean | Bots may pick their own names |
-| `lifecycle` | boolean | The server can be restarted or stopped |
 
 A boolean `true` capability is satisfied by anything other than `false`, `'none'` or an absent value. To demand one specific value, map it in the object:
 

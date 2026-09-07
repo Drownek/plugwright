@@ -10,9 +10,6 @@ const CAPABILITIES: EnvironmentCapabilities = {
     console: true,
     consoleOutput: 'full',
     op: true,
-    freshState: true,
-    arbitraryUsernames: true,
-    lifecycle: true,
 };
 
 /**

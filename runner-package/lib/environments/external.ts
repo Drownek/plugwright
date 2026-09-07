@@ -31,9 +31,6 @@ const BASE_CAPABILITIES: EnvironmentCapabilities = {
     // Never assumed true: nothing here proves the leased accounts actually have op rights
     // on the stand. A mode that can prove it would override this after setup().
     op: false,
-    freshState: false,
-    arbitraryUsernames: true,
-    lifecycle: false,
 };
 
 /**
