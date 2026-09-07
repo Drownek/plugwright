@@ -125,12 +125,29 @@ abstract class PaperProvisionTask : DefaultTask() {
                 lines.add("spawn-protection=0")
             }
 
+            // Enable RCON so the runner can send commands over a proper protocol
+            val rconProperties = mapOf(
+                "enable-rcon" to "true",
+                "rcon.port" to "25575",
+                "rcon.password" to "plugwright"
+            )
+            for ((key, value) in rconProperties) {
+                val hasKey = lines.any { it.trim().startsWith("$key=") }
+                if (hasKey) {
+                    lines = lines.map { line ->
+                        if (line.trim().startsWith("$key=")) "$key=$value" else line
+                    }.toMutableList()
+                } else {
+                    lines.add("$key=$value")
+                }
+            }
+
             Files.write(serverProperties.toPath(), lines)
         } else {
-            logger.lifecycle("Creating server.properties with online-mode=false, connection-throttle=0, spawn-protection=0 and server-port=${port.get()}")
+            logger.lifecycle("Creating server.properties with online-mode=false, connection-throttle=0, spawn-protection=0, enable-rcon=true and server-port=${port.get()}")
             Files.write(
                 serverProperties.toPath(),
-                listOf("online-mode=false", "connection-throttle=0", "spawn-protection=0", "server-port=${port.get()}")
+                listOf("online-mode=false", "connection-throttle=0", "spawn-protection=0", "server-port=${port.get()}", "enable-rcon=true", "rcon.port=25575", "rcon.password=plugwright")
             )
         }
 

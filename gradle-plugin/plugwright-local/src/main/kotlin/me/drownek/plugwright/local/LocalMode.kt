@@ -27,8 +27,10 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
     override fun createSpec(name: String, objects: ObjectFactory): LocalEnvironmentSpec =
         LocalEnvironmentSpec(name, objects)
 
-    override fun runnerPackages(spec: LocalEnvironmentSpec): List<RunnerPackageRef> =
-        listOf(RunnerPackageRef("@plugwright/runner", export = "localEnvironment"))
+    override fun runnerPackages(spec: LocalEnvironmentSpec): List<RunnerPackageRef> = listOf(
+        RunnerPackageRef("@plugwright/runner", export = "localEnvironment"),
+        RunnerPackageRef("@plugwright/console-rcon", export = "rconConsole"),
+    )
 
     override fun validate(spec: LocalEnvironmentSpec, ctx: ValidationContext) {
         if (spec.minecraftVersion.get().isBlank()) {
@@ -124,6 +126,8 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
         builder.put("minecraftVersion", spec.minecraftVersion.get())
         builder.put("host", "localhost")
         builder.put("port", spec.port.get())
+        builder.put("rconPort", spec.rconPort.get())
+        builder.put("rconPassword", spec.rconPassword.get())
     }
 
     private fun resolveJavaPath(javaLauncher: Provider<JavaLauncher>?): String {

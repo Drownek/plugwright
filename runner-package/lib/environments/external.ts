@@ -6,11 +6,10 @@ import type { SecretRef } from '../config.js';
 import { resolveSecret } from '../config.js';
 import { AccountPool } from '../account.js';
 import type { AccountsConfig } from '../account.js';
-import { AdminBotConsole } from '../admin-bot-console.js';
 import { sleep, importOptionalPackage } from '../utils.js';
 
 export interface ExternalConsoleChannelConfig {
-    kind: 'rcon' | 'adminBot';
+    kind: 'rcon';
     port?: number;
     username?: string;
     password?: SecretRef;
@@ -34,7 +33,6 @@ const BASE_CAPABILITIES: EnvironmentCapabilities = {
     freshState: false,
     arbitraryUsernames: true,
     lifecycle: false,
-    cleanupStrategy: 'compensating',
 };
 
 /**
@@ -65,11 +63,9 @@ class ExternalEnvironment implements Environment {
         return this.accountPool;
     }
 
-    async setup(session: Session): Promise<void> {
-        const connOpts = this.connection();
-
+    async setup(_session: Session): Promise<void> {
         for (const channel of this.config.console ?? []) {
-            const candidate = await this.buildChannel(channel, session, connOpts);
+            const candidate = await this.buildChannel(channel);
             if (!candidate) continue;
             try {
                 if (await candidate.probe()) {
@@ -98,8 +94,6 @@ class ExternalEnvironment implements Environment {
 
     private async buildChannel(
         channel: ExternalConsoleChannelConfig,
-        session: Session,
-        connOpts: BotConnectionOptions,
     ): Promise<ServerConsole | null> {
         if (channel.kind === 'rcon') {
             // A bare string literal here would make tsc try to resolve
@@ -128,13 +122,6 @@ class ExternalEnvironment implements Environment {
                 host: this.config.host,
                 port: channel.port ?? 25575,
                 password: channel.password ? resolveSecret(channel.password) : '',
-            });
-        }
-
-        if (channel.kind === 'adminBot') {
-            return new AdminBotConsole(session, connOpts, {
-                username: channel.username!,
-                password: channel.password ? resolveSecret(channel.password) : undefined,
             });
         }
 

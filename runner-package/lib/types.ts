@@ -1,9 +1,14 @@
 import type { PlayerWrapper } from './player.js';
 import type { ServerWrapper } from './server.js';
+import type { Environment } from './environment.js';
 
 export interface TestContext {
     player: PlayerWrapper;
     server: ServerWrapper;
+    /** The environment this test is running against. Use `env.id` to check whether
+     *  you're on `'local'` or `'external'`, and `env.capabilities` to inspect what
+     *  the environment supports. */
+    env: Environment;
     /** Connects an extra bot. Inside a `describe.serial` block, `as` names it: the same name in
      *  a later test of that block returns the same bot instead of connecting another. Outside a
      *  block the name is scoped to the one test, which is as long as the bot lives anyway.

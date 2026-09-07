@@ -1,10 +1,10 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
-import { randomUUID } from 'node:crypto';
 import pc from 'picocolors';
 import type { Environment, EnvironmentCapabilities, BotConnectionOptions } from '../environment.js';
 import type { ServerConsole } from '../console.js';
 import type { LocalEnvironmentConfig } from '../config.js';
 import type { Session } from '../session.js';
+import { importOptionalPackage } from '../utils.js';
 
 const CAPABILITIES: EnvironmentCapabilities = {
     console: true,
@@ -13,57 +13,16 @@ const CAPABILITIES: EnvironmentCapabilities = {
     freshState: true,
     arbitraryUsernames: true,
     lifecycle: true,
-    cleanupStrategy: 'wipe',
 };
-
-/** Talks to the Paper process over its stdin/stdout, same as the runner always has. */
-class StdioConsole implements ServerConsole {
-    readonly kind = 'stdio' as const;
-    readonly output = 'full' as const;
-
-    constructor(
-        private readonly serverProcess: ChildProcessWithoutNullStreams,
-        private readonly session: Session,
-    ) {}
-
-    async probe(): Promise<boolean> {
-        return this.serverProcess.exitCode === null && !this.serverProcess.killed;
-    }
-
-    execute(cmd: string): void {
-        console.log(`${pc.yellow('[Server]')} ${pc.dim(`Executing: ${cmd}`)}`);
-        this.serverProcess.stdin.write(cmd + '\n', (err) => {
-            if (err) console.error(`[Server] Write error: ${err}`);
-        });
-    }
-
-    /** stdio has no synchronous response channel, so we round-trip through a `/say` marker
-     *  and poll the console log for it, the same trick `PlayerWrapper.executeAndSync` uses.
-     *  Returns all lines produced between command submission and the sync marker.
-     */
-    async executeAndWait(cmd: string, timeoutMs: number = 5000): Promise<string> {
-        const syncId = `sync_${randomUUID().split('-')[0]}`;
-        const since = this.session.consoleLog.length;
-        this.execute(cmd);
-        this.execute(`say ${syncId}`);
-
-        const deadline = Date.now() + timeoutMs;
-        while (Date.now() < deadline) {
-            const recent = this.session.consoleLog.slice(since);
-            const syncIdx = recent.findIndex(l => l.includes(syncId));
-            if (syncIdx !== -1) {
-                return recent.slice(0, syncIdx).join('\n');
-            }
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        throw new Error(`Console command sync timed out for: ${cmd}`);
-    }
-}
 
 /**
  * The mode that's been here all along: download Paper, patch configs (Gradle side),
- * spawn it, tear it down. Behavior is unchanged from the pre-Session runner.ts —
- * this class just gives it a home that isn't the top-level function body.
+ * spawn it, tear it down.
+ *
+ * Commands are sent over RCON (the same protocol external mode uses) for reliable
+ * command-response correlation. The full server log is still captured via stdout/stderr
+ * so `expect(server).toHaveReceivedMessage(...)` keeps working — that's what
+ * `consoleOutput: 'full'` means.
  */
 export class LocalEnvironment implements Environment {
     readonly id = 'local';
@@ -73,6 +32,7 @@ export class LocalEnvironment implements Environment {
     private serverProcess: ChildProcessWithoutNullStreams | null = null;
     private session: Session | null = null;
     private cleanupStarted = false;
+    private _rconConsole: ServerConsole | null = null;
 
     constructor(config: LocalEnvironmentConfig) {
         this.config = config;
@@ -100,8 +60,69 @@ export class LocalEnvironment implements Environment {
         await this._waitForServerStart(serverProcess);
         console.log(`${pc.green(pc.bold('Server started successfully'))}\n`);
 
+        // stdout/stderr continue to feed the full console log — this is what makes
+        // `consoleOutput: 'full'` true and `expect(server).toHaveReceivedMessage` work.
         serverProcess.stdout.on('data', (data: Buffer) => session.writeConsoleOutput(data));
         serverProcess.stderr.on('data', (data: Buffer) => session.writeConsoleOutput(data));
+
+        // Connect to the local server's RCON for sending commands. RCON gives a proper
+        // synchronous response per command, unlike the old stdin `/say <syncId>` trick.
+        await this._connectRcon();
+    }
+
+    /**
+     * Dynamically imports `@plugwright/console-rcon` and connects to the local server.
+     * This is the same import path `ExternalEnvironment.buildChannel` uses, so the
+     * protocol handling is shared.
+     */
+    private async _connectRcon(): Promise<void> {
+        const rconPackage = '@plugwright/console-rcon';
+        let mod: any;
+        try {
+            mod = await importOptionalPackage(rconPackage);
+        } catch (error) {
+            throw new Error(
+                'Local mode now uses RCON for command execution. The "@plugwright/console-rcon" package ' +
+                'must be installed alongside "@plugwright/runner". If you are using the Gradle plugin, ' +
+                'run a clean build to have it installed automatically.\n' +
+                `(${(error as Error).message})`
+            );
+        }
+
+        const factory = mod.rconConsole ?? mod.default;
+        if (typeof factory !== 'function') {
+            throw new Error('"@plugwright/console-rcon" has no "rconConsole" export');
+        }
+
+        const rconConsole: ServerConsole = factory({
+            host: this.config.host ?? 'localhost',
+            port: this.config.rconPort ?? 25575,
+            password: this.config.rconPassword ?? 'plugwright',
+        });
+
+        // RCON may need a moment after the server logs "Done" — retry a few times.
+        const maxAttempts = 5;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                if (await rconConsole.probe()) {
+                    this._rconConsole = rconConsole;
+                    console.log(pc.green(`[local] RCON connected (port ${this.config.rconPort ?? 25575})`));
+                    return;
+                }
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    throw new Error(
+                        `RCON failed to connect to the local server after ${maxAttempts} attempts. ` +
+                        'Make sure enable-rcon=true is set in server.properties (the Gradle plugin does ' +
+                        `this automatically). (${(error as Error).message})`
+                    );
+                }
+            }
+            // Wait before retrying — RCON listener may start slightly after the game loop.
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        throw new Error('RCON probe returned false on all attempts');
     }
 
     connection(): BotConnectionOptions {
@@ -114,14 +135,14 @@ export class LocalEnvironment implements Environment {
     }
 
     console(): ServerConsole | null {
-        if (!this.serverProcess || !this.session) return null;
-        return new StdioConsole(this.serverProcess, this.session);
+        return this._rconConsole;
     }
 
     async teardown(): Promise<void> {
         const serverProcess = this.serverProcess;
         if (!serverProcess) return;
 
+        // Send `stop` through stdin — reliable even if RCON has already disconnected.
         if (serverProcess.exitCode === null && !serverProcess.killed) {
             try {
                 serverProcess.stdin.write('stop\n');

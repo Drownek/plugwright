@@ -4,11 +4,10 @@
  * admin bot) are added by later modes.
  */
 export interface ServerConsole {
-    readonly kind: 'stdio' | 'rcon' | 'admin-bot';
+    readonly kind: 'stdio' | 'rcon';
     /** How much of the server's output this channel can see. Matchers must check this,
      *  not just whether a console exists, or tests silently stop working on `'responses'`/`'none'`. */
     readonly output: 'full' | 'responses' | 'none';
     probe(): Promise<boolean>;
-    execute(cmd: string): void;
-    executeAndWait(cmd: string, timeoutMs?: number): Promise<string>;
+    execute(cmd: string, timeoutMs?: number): Promise<string>;
 }

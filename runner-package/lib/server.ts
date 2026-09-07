@@ -19,22 +19,13 @@ export class ServerWrapper {
         this.startIndex = this.session.consoleLog.length;
     }
 
-    /** Executes a console command synchronously. Note: when running under `concurrency: N`,
+    /** Executes a console command and resolves with the server's response. Note: when running under `concurrency: N`,
      *  console output is shared across all concurrent tests. Prefer player actions or qualify
      *  commands with `player.username`. */
-    execute(cmd: string): void {
+    execute(cmd: string, timeoutMs?: number): Promise<string> {
         if (!this.session.console) {
             throw new Error('No server console available for this environment');
         }
-        this.session.console.execute(cmd);
-    }
-
-    /** Runs a command and resolves with whatever the console gives back. A console with
-     *  `output: 'none'` has nothing to give back and resolves empty. */
-    executeAndWait(cmd: string, timeoutMs?: number): Promise<string> {
-        if (!this.session.console) {
-            throw new Error('No server console available for this environment');
-        }
-        return this.session.console.executeAndWait(cmd, timeoutMs);
+        return this.session.console.execute(cmd, timeoutMs);
     }
 }
