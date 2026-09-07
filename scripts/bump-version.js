@@ -10,7 +10,6 @@ const readline = require("readline");
 const NPM_PACKAGES = [
     "runner-package",
     "auth-authme-package",
-    "console-rcon-package",
 ];
 
 function prompt(question) {

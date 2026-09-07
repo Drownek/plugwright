@@ -5,8 +5,7 @@
   },
   "dependencies": {
     "@plugwright/runner": "file:../../../../runner-package",
-    "@plugwright/auth-authme": "file:../../../../auth-authme-package",
-    "@plugwright/console-rcon": "file:../../../../console-rcon-package"
+    "@plugwright/auth-authme": "file:../../../../auth-authme-package"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
