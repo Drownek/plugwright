@@ -94,7 +94,7 @@ export class RunnerMatchers<T = unknown> extends Matchers<T> {
         if (!(this.actual instanceof PlayerWrapper) && session.env.capabilities.consoleOutput !== 'full') {
             throw new Error(
                 `Cannot read the server log on environment "${session.env.id}": its console output level is ` +
-                `"${session.env.capabilities.consoleOutput}". Mark the test with requires: ['consoleOutput:full'] ` +
+                `"${session.env.capabilities.consoleOutput}". Mark the test with { requires: { consoleOutput: 'full' } } ` +
                 'to have it skipped there instead.'
             );
         }

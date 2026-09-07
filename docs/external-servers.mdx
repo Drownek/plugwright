@@ -60,7 +60,7 @@ Channels are probed in declaration order, and the first one that answers becomes
 The output level matters more than it looks. `full` means the whole server log is readable, so `expect(server).toHaveReceivedMessage(...)` works. `responses` means you get back what the command printed and nothing else. A test that reads the server log should say so:
 
 ```ts
-test('command is logged', { requires: ['consoleOutput:full'] }, async ({ server }) => {
+test('command is logged', { requires: { consoleOutput: 'full' } }, async ({ server }) => {
   await server.execute('say hello');
   await expect(server).toHaveReceivedMessage('hello');
 });

@@ -27,7 +27,7 @@ test('help displays message', async ({ player }) => {
 
 // Reading the server log needs a console that streams all of it. An environment whose
 // console only answers its own commands skips this test instead of failing it.
-test('server logs command execution', { requires: ['consoleOutput:full'] }, async ({ server }) => {
+test('server logs command execution', { requires: { consoleOutput: 'full' } }, async ({ server }) => {
   await server.execute('say hello');
   await expect(server).toHaveReceivedMessage('hello');
 });

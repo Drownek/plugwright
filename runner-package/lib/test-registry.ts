@@ -3,16 +3,20 @@ import type { TestContext } from './types.js';
 export type Hook = (context: TestContext) => Promise<void> | void;
 type TestFn = (context: TestContext) => Promise<void>;
 
+import type { EnvironmentCapabilities } from './environment.js';
+
 /**
  * Filters usable from a spec file, independent of environment names.
  *
- * `requires` checks capability flags on `env.capabilities` (e.g. `'console'`, `'op'`) —
+ * `requires` checks capability flags on `env.capabilities` (e.g. `console: true`, `op: true`) —
  * a value of `false` or `'none'` fails the check. `environments` checks the running
  * environment's name directly, for cases that aren't about capability but about the
  * content of a specific stand.
  */
+export type RequiresMap = Partial<EnvironmentCapabilities>;
+
 export interface TestOptions {
-    requires?: string[];
+    requires?: RequiresMap;
     environments?: string[];
     /** Runs this many independent instances of the test concurrently, each with its own bot
      *  leased from the account pool, to exercise races between players hitting the same feature
@@ -35,7 +39,7 @@ export interface TestCase {
     /** Spec-level `afterEach` hooks in run order (innermost `describe` first) — already
      *  reversed at registration time, see `registerTest`. */
     afterHooks: Hook[];
-    requires: string[];
+    requires: RequiresMap;
     environments: string[] | null;
     concurrency: number;
 }
@@ -54,7 +58,7 @@ export interface SerialBlock {
     name: string;
     account: string | null;
     tests: TestCase[];
-    requires: string[];
+    requires: RequiresMap;
     environments: string[] | null;
     concurrency: number;
 }
@@ -87,7 +91,7 @@ function scopedEntry(name: string, options: TestOptions) {
         name: [...labels, name].join(' > '),
         beforeHooks: scopeStack.flatMap(s => s.beforeHooks),
         afterHooks: [...scopeStack].reverse().flatMap(s => s.afterHooks),
-        requires: options.requires ?? [],
+        requires: options.requires ?? {},
         environments: options.environments ?? null,
         concurrency: normalizeConcurrency(options.concurrency),
     };
@@ -180,7 +184,7 @@ function serialImpl(label: string, optionsOrFn: SerialOptions | (() => void), ma
         name: [...labels, label].join(' > '),
         account: options.account ?? null,
         tests: [],
-        requires: options.requires ?? [],
+        requires: options.requires ?? {},
         environments: options.environments ?? null,
         concurrency: normalizeConcurrency(options.concurrency),
     };

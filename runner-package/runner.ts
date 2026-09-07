@@ -30,7 +30,7 @@ export { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator };
 export { PlayerWrapper };
 export { ServerWrapper } from './lib/server.js';
 export { test, opTest, describe, beforeEach, afterEach } from './lib/test-registry.js';
-export type { TestOptions, TestCase, SerialOptions, SerialBlock } from './lib/test-registry.js';
+export type { TestOptions, TestCase, SerialOptions, SerialBlock, RequiresMap } from './lib/test-registry.js';
 export { expect } from './lib/matchers.js';
 export { loadRunnerConfig, resolveSecret, isSecretRef } from './lib/config.js';
 export type { RunnerConfig, EnvironmentConfig, TestsConfig, LocalEnvironmentConfig, SecretRef, PluginConfig } from './lib/config.js';
