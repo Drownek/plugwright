@@ -30,7 +30,7 @@ The runner is published as <code>@plugwright/runner</code> from 3.0 onwards; <co
 ## Features
 
 `🚀` **Setup** – Automated server lifecycle management with Paper server downloads.
-  * **Supported Minecraft versions:** 1.8 to 1.21.11 (1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, 1.21.9, 1.21.11)
+  * **Supported Minecraft versions:** 1.8 to 26.1 (1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, 1.21.9, 1.21.11, 26.1)
 
 `🎮` **Bot Testing** – Powered by Mineflayer. Bots join, move, chat, and click GUIs like real players.
 
@@ -172,8 +172,13 @@ plugwright {
 Setting up CI takes less than 5 minutes. Use the official [plugwright-action](https://github.com/Drownek/plugwright-action) to run your entire test suite on every pull request.
 
 ```yaml
-name: E2E Tests
-on: [push, pull_request]
+name: Plugwright E2E Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
@@ -181,6 +186,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: drownek/plugwright-action@v1
+        with:
+          java-version: "17"
+          node-version: "24"
+          # Path to your plugin gradle project if it's not at the project's root
+          working-directory: "."
 ```
 
 ## Used in Production
