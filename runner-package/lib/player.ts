@@ -222,7 +222,9 @@ export class PlayerWrapper {
             (text, secret) => (secret ? text.split(secret).join('[REDACTED]') : text),
             message,
         );
-        console.log(`${pc.cyan('[Bot]')} ${pc.dim(`Chatting: ${logged}`)}`);
+        const name = this.bot?.username ?? this.username;
+        const tag = name ? `[Bot ${name}]` : '[Bot]';
+        console.log(`${pc.cyan(tag)} ${pc.dim(`Chatting: ${logged}`)}`);
         this.bot.chat(message);
     }
 

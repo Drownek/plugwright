@@ -33,7 +33,9 @@ export class RconConnection {
             const socket = createConnection({ host: this.host, port: this.port });
             this.socket = socket;
 
+            let hasConnected = false;
             socket.once('connect', () => {
+                hasConnected = true;
                 socket.setNoDelay(true);
                 this.pendingAuth = {
                     resolve: () => resolve(),
@@ -45,14 +47,23 @@ export class RconConnection {
 
             socket.on('data', (chunk) => this.onData(chunk));
 
-            socket.once('error', (err) => {
+            socket.on('error', (err) => {
                 this.connectPromise = null;
-                reject(err);
+                if (!hasConnected) {
+                    reject(err);
+                }
+                if (this.pendingAuth) {
+                    this.pendingAuth.reject(err);
+                    this.pendingAuth = null;
+                }
+                for (const waiter of this.pending.values()) waiter.reject(err);
+                this.pending.clear();
             });
 
             socket.once('close', () => {
                 this.connectPromise = null;
                 this.socket = null;
+                this.inbound = Buffer.alloc(0);
                 const closedError = new Error('RCON connection closed');
                 this.pendingAuth?.reject(closedError);
                 this.pendingAuth = null;
@@ -85,6 +96,7 @@ export class RconConnection {
                 this.socket?.destroy();
                 this.socket = null;
                 this.connectPromise = null;
+                this.inbound = Buffer.alloc(0);
                 waiter.reject(new Error('RCON authentication failed: wrong password'));
             } else {
                 waiter.resolve('');
@@ -139,9 +151,10 @@ export class RconConnection {
 
     disconnect(): void {
         if (this.socket) {
-            this.socket.end();
+            this.socket.destroy();
             this.socket = null;
         }
         this.connectPromise = null;
+        this.inbound = Buffer.alloc(0);
     }
 }
