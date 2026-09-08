@@ -93,7 +93,7 @@ function createBotScope(session: Session, server: ServerWrapper, connOpts: BotCo
 
         try {
             const botUsername = account.username;
-            console.log(`${pc.cyan('[Bot]')} Creating bot: ${pc.bold(botUsername)}${formatInstanceTag(instance)}`);
+            console.log(`${pc.cyan(`[Bot ${botUsername}]`)} Creating bot...${formatInstanceTag(instance)}`);
 
             await session.env.beforeJoin?.();
 

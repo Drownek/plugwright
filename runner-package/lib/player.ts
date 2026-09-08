@@ -76,7 +76,7 @@ export class PlayerWrapper {
 
             const onSpawn = () => {
                 cleanup();
-                console.log(`${pc.cyan('[Bot]')} ${pc.dim(`${name()} spawned successfully`)}`);
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} Spawned successfully`);
                 resolve();
             };
 
@@ -177,7 +177,7 @@ export class PlayerWrapper {
 
         bot.on('message', (jsonMsg: unknown) => {
             const message = String(jsonMsg);
-            console.log(pc.dim(`[Bot ${botUsername()}] Received message: "${message}"`));
+            console.log(`${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.dim(`Received message: "${message}"`)}`);
             this.messageBuffer.push(message);
         });
 
