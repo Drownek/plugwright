@@ -6,7 +6,7 @@ test('player starts with default balance', async ({ player }) => {
 });
 
 test('player can send money', async ({ player, server }) => {
-  server.execute(`eco give ${player.username} 500`);
+  await server.execute(`eco give ${player.username} 500`);
   player.chat('/pay pw_dummy 100');
   await expect(player).toHaveReceivedMessage('Sent $100');
   

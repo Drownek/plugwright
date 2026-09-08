@@ -250,6 +250,7 @@ export async function runTestCase(params: RunTestCaseParams): Promise<TestResult
     const ctx: TestContext = {
         player,
         server,
+        env: session.env,
         createPlayer: options => bots.createPlayer(options),
         invalidatePlayer: () => { /* nothing follows this test — see the serial-block runner */ },
         signal: abort.signal,
@@ -352,6 +353,7 @@ export async function runSerialBlock(params: RunSerialBlockParams): Promise<Test
             const ctx: TestContext = {
                 player,
                 server,
+                env: session.env,
                 createPlayer: options => bots.createPlayer(options),
                 invalidatePlayer: (p, reason) => {
                     if (p === player) invalidatedBy = reason ?? `invalidated by "${testCase.name}"`;

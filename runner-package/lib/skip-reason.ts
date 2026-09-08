@@ -1,21 +1,37 @@
 import type { Environment } from './environment.js';
+import type { RequiresMap } from './test-registry.js';
 
-/** Capability keys from a `requires` list that `env` does not actually satisfy. A value of
+/** Capability keys from a `requires` map that `env` does not actually satisfy. A value of
  *  `false`, `'none'`, or an absent key all count as unmet.
  *
- *  `'key:value'` demands one specific value instead — `'consoleOutput:full'` for a test that
+ *  `{ consoleOutput: 'full' }` demands one specific value instead — for a test that
  *  reads the server log, which a console answering only its own commands cannot provide even
- *  though it satisfies plain `'console'`. */
-export function missingCapabilities(env: Environment, required: string[]): string[] {
-    const capabilities = env.capabilities as unknown as Record<string, unknown>;
-    return required.filter(key => {
-        const separator = key.indexOf(':');
-        if (separator !== -1) {
-            return String(capabilities[key.slice(0, separator)]) !== key.slice(separator + 1);
+ *  though it satisfies plain `console: true`. */
+export function missingCapabilities(env: Environment, required: RequiresMap): string[] {
+    if (Array.isArray(required)) {
+        throw new Error('Test "requires" must be an object map (e.g. { requires: { console: true } }), not an array.');
+    }
+    const capabilities = (env?.capabilities ?? {}) as unknown as Record<string, unknown>;
+    const missing: string[] = [];
+    for (const [key, expectedValue] of Object.entries(required ?? {})) {
+        if (expectedValue === undefined) continue;
+        const actualValue = capabilities[key];
+        
+        if (expectedValue === true) {
+            if (actualValue === false || actualValue === 'none' || actualValue == null) {
+                missing.push(key);
+            }
+        } else if (expectedValue === false) {
+            if (actualValue !== false && actualValue !== 'none' && actualValue != null) {
+                missing.push(`!${key}`);
+            }
+        } else {
+            if (String(actualValue) !== String(expectedValue)) {
+                missing.push(`${key}:${expectedValue}`);
+            }
         }
-        const value = capabilities[key];
-        return value === false || value === 'none' || value === undefined;
-    });
+    }
+    return missing;
 }
 
 /** The two `TestOptions` fields a test itself declares — `environments` and `requires` —
@@ -24,7 +40,7 @@ export function missingCapabilities(env: Environment, required: string[]): strin
 export function skipReasonForOptions(
     env: Environment,
     environmentName: string,
-    requires: string[],
+    requires: RequiresMap,
     environments: string[] | null,
 ): string | null {
     if (environments && !environments.includes(environmentName)) {

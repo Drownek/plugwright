@@ -36,7 +36,7 @@ class ExternalEnvironmentSpec(private val environmentName: String, private val o
     internal val accountsSpec: AccountsSpec = AccountsSpec(objects)
     internal val pluginsSpec: PluginsSpec = PluginsSpec()
 
-    /** `console { rcon { ... }; adminBot("Name") { ... } }`. */
+    /** `console { rcon { ... } }`. */
     fun console(action: ConsoleSpec.() -> Unit) {
         consoleSpec = ConsoleSpec(objects).apply(action)
     }

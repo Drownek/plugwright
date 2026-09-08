@@ -7,7 +7,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
-import java.io.File
 
 /**
  * Runs the compiled test suite against one environment.
@@ -60,10 +59,6 @@ abstract class PlugwrightTestTask : AbstractNodeTask() {
     /** Runner plugins this environment loads, from [me.drownek.plugwright.api.TaskRegistrationContext.pluginConfigs]. */
     @get:Internal
     abstract val pluginConfigs: ListProperty<PluginRef>
-
-    /** Crash-recovery journal for this environment's run. */
-    @get:Internal
-    abstract val journalFile: RegularFileProperty
 
     /** npm package exporting this environment's factory. Unset for a built-in mode, which the
      *  runner already carries. */
@@ -127,7 +122,6 @@ abstract class PlugwrightTestTask : AbstractNodeTask() {
             jsonReportFile = jsonReportFile.get().asFile,
             junitReportFile = junitReportFile.get().asFile,
             pluginConfigs = pluginConfigs.get(),
-            journalFile = journalFile.orNull?.asFile,
             runtimePackage = runtimePackage.orNull,
             runtimeExport = runtimeExport.orNull,
         )

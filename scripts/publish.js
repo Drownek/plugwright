@@ -49,7 +49,6 @@ const path = require("path");
 const PACKAGES = [
     "runner-package",
     "auth-authme-package",
-    "console-rcon-package",
 ];
 
 const PUBLIC_REGISTRY = "https://registry.npmjs.org/";

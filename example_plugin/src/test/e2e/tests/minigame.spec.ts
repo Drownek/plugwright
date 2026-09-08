@@ -11,7 +11,7 @@ test('join arena game', async ({ player }) => {
 test('cannot join full arena', async ({ player, server }) => {
   // Fill arena with fake players
   for (let i = 0; i < 10; i++) {
-    server.execute(`arena addplayer Player${i}`);
+    await server.execute(`arena addplayer Player${i}`);
   }
   
   player.chat('/arena join');

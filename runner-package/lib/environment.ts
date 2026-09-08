@@ -8,10 +8,6 @@ export interface EnvironmentCapabilities {
     console: boolean;
     consoleOutput: 'full' | 'responses' | 'none';
     op: boolean;
-    freshState: boolean;
-    arbitraryUsernames: boolean;
-    lifecycle: boolean;
-    cleanupStrategy: 'wipe' | 'compensating' | 'none';
 }
 
 export interface BotConnectionOptions {

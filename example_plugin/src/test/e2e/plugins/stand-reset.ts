@@ -1,4 +1,4 @@
-import { definePlugin, waitUntil } from '@plugwright/runner';
+import { definePlugin, expect } from '@plugwright/runner';
 
 /** What a fresh account starts with, per ExamplePlugin's own default. */
 const STARTING_BALANCE = 1000;
@@ -21,21 +21,13 @@ export default definePlugin({
     name: 'stand-reset',
 
     async beforeEach({ player, server }) {
-        // Nothing to reset with: an environment without a console cannot run commands at all,
-        // and the tests that depend on this reset are excluded there anyway.
-        if (!server.session.env.capabilities.console) return;
-
         await player.deOp();
         await player.clearInventory();
 
-        await waitUntil(async () => {
-            const res = await server.executeAndWait(`eco set ${player.username} ${STARTING_BALANCE}`);
-            return res.includes(`Set balance of ${player.username} to $${STARTING_BALANCE}`);
-        }, { message: `Console did not confirm balance reset for ${player.username}` });
+        const ecoOutput = await server.execute(`eco set ${player.username} ${STARTING_BALANCE}`);
+        expect(ecoOutput).toContain(`Set balance of ${player.username} to $${STARTING_BALANCE}`);
 
-        await waitUntil(async () => {
-            const res = await server.executeAndWait(`kit reset ${player.username}`);
-            return res.includes(`Kit cooldown reset for ${player.username}`);
-        }, { message: `Console did not confirm kit cooldown reset for ${player.username}` });
+        const kitOutput = await server.execute(`kit reset ${player.username}`);
+        expect(kitOutput).toContain(`Kit cooldown reset for ${player.username}`);
     },
 });

@@ -6,11 +6,11 @@ import type { SecretRef } from '../config.js';
 import { resolveSecret } from '../config.js';
 import { AccountPool } from '../account.js';
 import type { AccountsConfig } from '../account.js';
-import { AdminBotConsole } from '../admin-bot-console.js';
-import { sleep, importOptionalPackage } from '../utils.js';
+import { sleep } from '../utils.js';
+import { rconConsole } from '../rcon/index.js';
 
 export interface ExternalConsoleChannelConfig {
-    kind: 'rcon' | 'adminBot';
+    kind: 'rcon';
     port?: number;
     username?: string;
     password?: SecretRef;
@@ -31,10 +31,6 @@ const BASE_CAPABILITIES: EnvironmentCapabilities = {
     // Never assumed true: nothing here proves the leased accounts actually have op rights
     // on the stand. A mode that can prove it would override this after setup().
     op: false,
-    freshState: false,
-    arbitraryUsernames: true,
-    lifecycle: false,
-    cleanupStrategy: 'compensating',
 };
 
 /**
@@ -65,11 +61,9 @@ class ExternalEnvironment implements Environment {
         return this.accountPool;
     }
 
-    async setup(session: Session): Promise<void> {
-        const connOpts = this.connection();
-
+    async setup(_session: Session): Promise<void> {
         for (const channel of this.config.console ?? []) {
-            const candidate = await this.buildChannel(channel, session, connOpts);
+            const candidate = await this.buildChannel(channel);
             if (!candidate) continue;
             try {
                 if (await candidate.probe()) {
@@ -98,43 +92,12 @@ class ExternalEnvironment implements Environment {
 
     private async buildChannel(
         channel: ExternalConsoleChannelConfig,
-        session: Session,
-        connOpts: BotConnectionOptions,
     ): Promise<ServerConsole | null> {
         if (channel.kind === 'rcon') {
-            // A bare string literal here would make tsc try to resolve
-            // "@plugwright/console-rcon"'s types even though it's an optional peer package
-            // this repo doesn't depend on — routing through a variable keeps the import
-            // dynamic (untyped) without an ambient module declaration.
-            const rconPackage = '@plugwright/console-rcon';
-            let mod: any;
-            try {
-                mod = await importOptionalPackage(rconPackage);
-            } catch (error) {
-                console.error(pc.red(
-                    'Mode "external": console { rcon { } } needs the "@plugwright/console-rcon" package.\n' +
-                    'It installs automatically as part of plugwrightCompileTests — check that npm install\n' +
-                    'completed in your tests directory and that the package appears under node_modules.\n' +
-                    `(${(error as Error).message})`
-                ));
-                return null;
-            }
-            const factory = mod.rconConsole ?? mod.default;
-            if (typeof factory !== 'function') {
-                console.error(pc.red('"@plugwright/console-rcon" has no "rconConsole" export'));
-                return null;
-            }
-            return factory({
+            return rconConsole({
                 host: this.config.host,
                 port: channel.port ?? 25575,
                 password: channel.password ? resolveSecret(channel.password) : '',
-            });
-        }
-
-        if (channel.kind === 'adminBot') {
-            return new AdminBotConsole(session, connOpts, {
-                username: channel.username!,
-                password: channel.password ? resolveSecret(channel.password) : undefined,
             });
         }
 
@@ -166,6 +129,9 @@ class ExternalEnvironment implements Environment {
 
     async teardown(): Promise<void> {
         // No lifecycle: the tested server isn't ours to stop.
+        if (this._console?.close) {
+            await this._console.close();
+        }
     }
 }
 

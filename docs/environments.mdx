@@ -51,13 +51,12 @@ plugwrightProvisionLocal   download Paper, patch configs, copy the plugin jar
 plugwrightCleanLocal       wipe the run directory
 plugwrightRunServerLocal   start the server interactively, no tests
 plugwrightPingStaging      check that an external stand answers, no tests
-plugwrightCleanStaging     compensating cleanup on an external stand
 plugwrightTestLocal        run the suite against one environment
 plugwrightTestStaging
 plugwrightTest             the matrix: every environment with includeInMatrix
 ```
 
-Which tasks exist depends on the mode. `LocalMode` contributes provisioning, cleaning and a server-run task; `ExternalMode` contributes ping and cleanup, and nothing that touches files.
+Which tasks exist depends on the mode. `LocalMode` contributes provisioning, cleaning and a server-run task; `ExternalMode` contributes ping, and nothing that touches files.
 
 Tasks for the `primaryEnvironment` also get an unsuffixed alias, so `plugwrightRunServer` still means what it used to. `plugwrightTest` is the exception: it belongs to the matrix.
 

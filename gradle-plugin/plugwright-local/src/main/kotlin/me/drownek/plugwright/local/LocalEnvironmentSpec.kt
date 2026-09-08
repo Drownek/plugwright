@@ -34,6 +34,12 @@ class LocalEnvironmentSpec(private val environmentName: String, objects: ObjectF
     /** Port bots connect on. Currently always bound on `localhost`. */
     val port: Property<Int> = objects.property(Int::class.java).convention(25565)
 
+    /** RCON port for the local server. Defaults to 25575. */
+    val rconPort: Property<Int> = objects.property(Int::class.java).convention(25575)
+
+    /** RCON password for the local server. Static throwaway — the server only listens on localhost. */
+    val rconPassword: Property<String> = objects.property(String::class.java).convention("plugwright")
+
     /** URLs of plugins to download before running tests. */
     val pluginUrls: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
 

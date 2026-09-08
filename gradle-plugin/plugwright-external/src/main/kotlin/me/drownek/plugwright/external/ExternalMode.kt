@@ -19,13 +19,9 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
     override fun createSpec(name: String, objects: ObjectFactory): ExternalEnvironmentSpec =
         ExternalEnvironmentSpec(name, objects)
 
-    override fun runnerPackages(spec: ExternalEnvironmentSpec): List<RunnerPackageRef> = buildList {
-        add(RunnerPackageRef("@plugwright/runner", export = "externalEnvironment"))
-        val needsRcon = spec.consoleSpec?.channels?.any { it is ConsoleChannelSpec.Rcon } == true
-        if (needsRcon) {
-            add(RunnerPackageRef("@plugwright/console-rcon", export = "rconConsole"))
-        }
-    }
+    override fun runnerPackages(spec: ExternalEnvironmentSpec): List<RunnerPackageRef> = listOf(
+        RunnerPackageRef("@plugwright/runner", export = "externalEnvironment")
+    )
 
     override fun validate(spec: ExternalEnvironmentSpec, ctx: ValidationContext) {
         if (!spec.host.isPresent || spec.host.get().isBlank()) {
@@ -49,8 +45,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
             when (channel) {
                 is ConsoleChannelSpec.Rcon ->
                     if (!channel.password.isPresent) ctx.error("console.rcon.password must be set")
-                is ConsoleChannelSpec.AdminBot ->
-                    if (!channel.password.isPresent) ctx.error("console.adminBot(\"${channel.username}\").password must be set")
             }
         }
     }
@@ -68,11 +62,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
                         is ConsoleChannelSpec.Rcon -> {
                             put("kind", "rcon")
                             put("port", channel.port.get())
-                            put("password", channel.password.get())
-                        }
-                        is ConsoleChannelSpec.AdminBot -> {
-                            put("kind", "adminBot")
-                            put("username", channel.username)
                             put("password", channel.password.get())
                         }
                     }
@@ -119,7 +108,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
 
         ctx.pluginConfigs(project.provider { spec.pluginsSpec.refs() })
         val configProvider = project.provider { ConfigNodeBuilder().also { serialize(spec, it) }.build() }
-        val journalFile = project.layout.buildDirectory.file("plugwright/$envName-journal.jsonl")
 
         ctx.register("Ping", PlugwrightPingTask::class.java) {
             environmentName.set(envName)
@@ -127,15 +115,6 @@ object ExternalMode : PlugwrightMode<ExternalEnvironmentSpec> {
             testsDir.set(ctx.testsDir)
             configFile.set(project.layout.buildDirectory.file("tmp/plugwright/$envName-ping.json"))
             environmentConfig.set(configProvider)
-        }
-
-        ctx.register("Clean", PlugwrightCleanupTask::class.java) {
-            environmentName.set(envName)
-            modeId.set(id)
-            testsDir.set(ctx.testsDir)
-            configFile.set(project.layout.buildDirectory.file("tmp/plugwright/$envName-cleanup.json"))
-            environmentConfig.set(configProvider)
-            this.journalFile.set(journalFile)
         }
 
         // No prepareTask: unlike local, external doesn't provision anything before

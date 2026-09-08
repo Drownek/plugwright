@@ -81,8 +81,14 @@ export class RconConnection {
         if (packet.type === PacketType.AUTH_RESPONSE && this.pendingAuth) {
             const waiter = this.pendingAuth;
             this.pendingAuth = null;
-            if (packet.id === -1) waiter.reject(new Error('RCON authentication failed: wrong password'));
-            else waiter.resolve('');
+            if (packet.id === -1) {
+                this.socket?.destroy();
+                this.socket = null;
+                this.connectPromise = null;
+                waiter.reject(new Error('RCON authentication failed: wrong password'));
+            } else {
+                waiter.resolve('');
+            }
             return;
         }
 
@@ -129,5 +135,13 @@ export class RconConnection {
         this.executeAndWait(cmd, 5000).catch((error: Error) => {
             console.error(`[rcon] command failed: ${cmd}: ${error.message}`);
         });
+    }
+
+    disconnect(): void {
+        if (this.socket) {
+            this.socket.end();
+            this.socket = null;
+        }
+        this.connectPromise = null;
     }
 }

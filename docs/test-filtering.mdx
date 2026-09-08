@@ -41,7 +41,7 @@ Two filters, meant for different problems.
 **By capability** — for a test that needs something the environment might not have. This travels with the test and doesn't care what the environments are called:
 
 ```ts
-test('give command hands over the item', { requires: ['console', 'op'] }, async ({ player }) => {
+test('give command hands over the item', { requires: { console: true, op: true } }, async ({ player }) => {
     await player.giveItem('diamond', 1);
 });
 ```
@@ -53,21 +53,17 @@ Capability keys come from the environment's own report, after it has connected:
 | `console` | boolean | Commands can be run at all |
 | `consoleOutput` | `full` / `responses` / `none` | Whole server log, only command answers, or nothing |
 | `op` | boolean | The environment can grant operator status |
-| `freshState` | boolean | Each test gets a clean world and a clean player |
-| `arbitraryUsernames` | boolean | Bots may pick their own names |
-| `lifecycle` | boolean | The server can be restarted or stopped |
-| `cleanupStrategy` | `wipe` / `compensating` / `none` | How cleanup happens after the run |
 
-A bare key is satisfied by anything other than `false`, `'none'` or an absent value. To demand one specific value, use `key:value`:
+A boolean `true` capability is satisfied by anything other than `false`, `'none'` or an absent value. To demand one specific value, map it in the object:
 
 ```ts
-test('command is logged', { requires: ['consoleOutput:full'] }, async ({ server }) => {
-    server.execute('say hello');
+test('console matters', { requires: { consoleOutput: 'full' } }, async ({ server }) => {
+    await server.execute('say hello');
     await expect(server).toHaveReceivedMessage('hello');
 });
 ```
 
-That form exists because `requires: ['console']` is satisfied by an RCON console that answers its own commands, while reading the server log needs a console that streams all of it. Without the distinction you get tests that neither skip nor work.
+That form exists because `{ requires: { console: true } }` is satisfied by an RCON console that answers its own commands, while reading the server log needs a console that streams all of it. Without the distinction you get tests that neither skip nor work.
 
 **By environment name** — for when the difference isn't a capability but what's installed on that particular server:
 

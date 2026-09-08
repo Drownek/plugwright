@@ -27,8 +27,9 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
     override fun createSpec(name: String, objects: ObjectFactory): LocalEnvironmentSpec =
         LocalEnvironmentSpec(name, objects)
 
-    override fun runnerPackages(spec: LocalEnvironmentSpec): List<RunnerPackageRef> =
-        listOf(RunnerPackageRef("@plugwright/runner", export = "localEnvironment"))
+    override fun runnerPackages(spec: LocalEnvironmentSpec): List<RunnerPackageRef> = listOf(
+        RunnerPackageRef("@plugwright/runner", export = "localEnvironment")
+    )
 
     override fun validate(spec: LocalEnvironmentSpec, ctx: ValidationContext) {
         if (spec.minecraftVersion.get().isBlank()) {
@@ -79,9 +80,14 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
             runDir.set(spec.runDir)
             minecraftVersion.set(spec.minecraftVersion)
             port.set(spec.port)
-            pluginJar.set(ctx.projectPluginJar)
+            pluginJar.set(spec.useExternalPluginsOnly.flatMap { externalOnly ->
+                if (externalOnly) project.objects.property(File::class.java)
+                else ctx.projectPluginJar
+            })
             pluginUrls.set(spec.pluginUrls)
             runDirFiles.set(spec.runDirFiles)
+            rconPort.set(spec.rconPort)
+            rconPassword.set(spec.rconPassword)
         }
 
         val javaLauncherProvider: Provider<JavaLauncher>? = run {
@@ -124,6 +130,8 @@ object LocalMode : PlugwrightMode<LocalEnvironmentSpec> {
         builder.put("minecraftVersion", spec.minecraftVersion.get())
         builder.put("host", "localhost")
         builder.put("port", spec.port.get())
+        builder.put("rconPort", spec.rconPort.get())
+        builder.put("rconPassword", spec.rconPassword.get())
     }
 
     private fun resolveJavaPath(javaLauncher: Provider<JavaLauncher>?): String {

@@ -7,13 +7,12 @@ This page is for people releasing Plugwright itself, or running a fork of it ins
 organisation. If you are writing tests for your own plugin you want [Quickstart](/quickstart)
 instead.
 
-Plugwright ships as four artifacts that move as one version:
+Plugwright ships as three artifacts that move as one version:
 
 | Artifact | Kind | Public home |
 | --- | --- | --- |
 | `@plugwright/runner` | npm | npmjs.com |
 | `@plugwright/auth-authme` | npm | npmjs.com |
-| `@plugwright/console-rcon` | npm | npmjs.com |
 | `io.github.drownek.plugwright` | gradle plugin | Gradle Plugin Portal |
 
 Both destinations — the public one and a private one — use the same two commands. What
@@ -32,12 +31,12 @@ cd gradle-plugin
 ./gradlew publishToPublicRepository
 ```
 
-`publish:packages` with nothing configured publishes all three npm packages to npmjs.com. It
+`publish:packages` with nothing configured publishes both npm packages to npmjs.com. It
 uses whatever credentials npm already has, so an `npm login` session or an `NPM_TOKEN` is
 enough. In CI it is an `NPM_TOKEN` secret rather than the job's OIDC token: a trusted
 publisher is configured per package, and the `@plugwright` names have never been published,
 so there is nothing to authenticate against until the first release has gone out. Provenance
-is signed from the OIDC token either way, so `--provenance` works with both. Once all three
+is signed from the OIDC token either way, so `--provenance` works with both. Once both
 packages exist, `npm trust github <package> --file release.yml` replaces the secret.
 
 `publishToPublicRepository` is the Gradle Plugin Portal, and reads `GRADLE_PUBLISH_KEY` and
@@ -140,8 +139,8 @@ repository for the plugin. That is covered in
 
 ## Moving the version
 
-All four artifacts carry one version, kept in `version.txt`. `npm run bump` moves it
-everywhere at once — the three `package.json` files and the lockfiles that record the
+All three artifacts carry one version, kept in `version.txt`. `npm run bump` moves it
+everywhere at once — the two `package.json` files and the lockfiles that record the
 runner's version, plus the README, the quickstart and the example plugin for a stable
 release — then tags the commit.
 

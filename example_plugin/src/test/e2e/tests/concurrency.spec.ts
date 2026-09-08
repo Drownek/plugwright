@@ -14,7 +14,7 @@ import { describe, expect, test } from '@plugwright/runner';
 
 test(
     'concurrent bots each see their own marker and stay connected',
-    { concurrency: 3, requires: ['consoleOutput:full'] },
+    { concurrency: 3, requires: { consoleOutput: 'full' } },
     async ({ player, server }) => {
         const marker = `concurrency-marker-${player.username}`;
         player.chat(marker);
