@@ -104,13 +104,13 @@ export class Session {
             errorCount++;
             const now = Date.now();
             if (now - lastLoggedAt > 1000) {
-                console.log(pc.dim(`[Bot] ${options.username} error (${errorCount} so far): ${err.message}`));
+                console.log(`${pc.cyan(`[Bot ${options.username}]`)} ${pc.dim(`Error (${errorCount} so far): ${err.message}`)}`);
                 lastLoggedAt = now;
             }
         });
 
         bot.once('end', (reason: string) => {
-            console.log(pc.dim(`[Bot] ${options.username} connection ended: ${reason}`));
+            console.log(`${pc.cyan(`[Bot ${options.username}]`)} ${pc.dim(`Connection ended: ${reason}`)}`);
         });
 
         return bot;
@@ -135,7 +135,7 @@ export class Session {
             try {
                 bot.removeAllListeners();
             } catch (err) {
-                console.log(pc.dim(`[Bot] ${label} warning: failed to remove listeners: ${(err as Error).message}`));
+                console.log(`${pc.cyan(`[Bot ${label}]`)} ${pc.dim(`Warning: failed to remove listeners: ${(err as Error).message}`)}`);
             }
         };
 
@@ -147,7 +147,7 @@ export class Session {
 
         return new Promise<void>((resolve) => {
             const timeout = setTimeout(() => {
-                console.log(pc.dim(`[Bot] ${label} disconnect timeout, continuing`));
+                console.log(`${pc.cyan(`[Bot ${label}]`)} ${pc.dim('Disconnect timeout, continuing')}`);
                 cleanupListeners();
                 resolve();
             }, timeoutMs);
@@ -160,7 +160,7 @@ export class Session {
                 });
                 bot.quit();
             } catch (err) {
-                console.log(pc.dim(`[Bot] ${label} error during disconnect: ${(err as Error).message}`));
+                console.log(`${pc.cyan(`[Bot ${label}]`)} ${pc.dim(`Error during disconnect: ${(err as Error).message}`)}`);
                 clearTimeout(timeout);
                 cleanupListeners();
                 resolve();

@@ -82,13 +82,13 @@ export class PlayerWrapper {
 
             const onError = (err: Error) => {
                 cleanup();
-                console.log(pc.red(`[Bot] ${name()} connection error: ${err.message}`));
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} ${pc.red(`Connection error: ${err.message}`)}`);
                 reject(err);
             };
 
             const onKicked = (reason: string) => {
                 cleanup();
-                console.log(pc.red(`[Bot] ${name()} kicked: ${reason}`));
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} ${pc.red(`Kicked: ${reason}`)}`);
                 reject(new Error(`Bot ${name()} was kicked: ${reason}`));
             };
 
@@ -184,13 +184,13 @@ export class PlayerWrapper {
         bot.on('windowOpen', (window: unknown) => {
             if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string; type?: string | number; slots?: unknown[] };
-            console.log(pc.gray(`[DEBUG] [Bot ${botUsername()}] Global windowOpen event - Title: "${win.title}", Type: ${win.type}, SlotCount: ${win.slots?.length}`));
+            console.log(`${pc.gray('[DEBUG]')} ${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.gray(`Global windowOpen event - Title: "${win.title}", Type: ${win.type}, SlotCount: ${win.slots?.length}`)}`);
         });
 
         bot.on('windowClose', (window: unknown) => {
             if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string };
-            console.log(pc.gray(`[DEBUG] [Bot ${botUsername()}] windowClose event - Window: ${win?.title || 'unknown'}`));
+            console.log(`${pc.gray('[DEBUG]')} ${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.gray(`windowClose event - Window: ${win?.title || 'unknown'}`)}`);
         });
     }
 
