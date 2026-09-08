@@ -13,6 +13,29 @@ on:
       - 'docs/**'
       - 'docs.json'
       - '**/*.md'
+  workflow_dispatch:
+    inputs:
+      mc_version:
+        description: 'Minecraft version to test'
+        required: true
+        default: '1.21.11'
+        type: choice
+        options:
+          - '1.21.11'
+          - '26.1.2'
+      java_version:
+        description: 'Java version'
+        required: true
+        default: '21'
+        type: choice
+        options:
+          - '21'
+          - '26'
+      run_stand:
+        description: 'Run external stand server tests'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   test-example-plugin:
@@ -20,6 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      MC_VERSION: ${{ inputs.mc_version || '1.21.11' }}
+      JAVA_VERSION: ${{ inputs.java_version || '21' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -31,15 +56,17 @@ jobs:
           npm run build:packages
       - uses: drownek/plugwright-action@v1
         with:
-          java-version: "21"
+          java-version: ${{ inputs.java_version || '21' }}
           node-version: "24"
           working-directory: "./example_plugin"
 
   test-example-plugin-stand:
-    if: "!contains(github.event.head_commit.message, 'skip-ci')"
+    if: "!contains(github.event.head_commit.message, 'skip-ci') && (inputs.run_stand == null || inputs.run_stand == true)"
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      MC_VERSION: ${{ inputs.mc_version || '1.21.11' }}
+      JAVA_VERSION: ${{ inputs.java_version || '21' }}
       # Test-only credentials for the Paper server this job starts and tears down itself.
       PLUGWRIGHT_RCON_PASSWORD: plugwright
       PLUGWRIGHT_BOT_PASSWORD: plugwright
@@ -61,7 +88,7 @@ jobs:
       # to already have what npm(...) plugin refs and console { rcon {} } need.
       - uses: drownek/plugwright-action@v1
         with:
-          java-version: "21"
+          java-version: ${{ inputs.java_version || '21' }}
           node-version: "24"
           working-directory: "./example_plugin"
           gradle-args: plugwrightProvisionLocal plugwrightCompileTests

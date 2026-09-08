@@ -18,6 +18,8 @@ val localBotPassword = "plugwright"
 // channel that connects back to it. The literal is the fallback for a server started without
 // the variable set; the console channel reads the variable itself, at run time.
 val standRconPassword: String = providers.environmentVariable("PLUGWRIGHT_RCON_PASSWORD").getOrElse("plugwright")
+val mcVersion: String = providers.environmentVariable("MC_VERSION").getOrElse("1.21.11")
+val javaVersion: Int = providers.environmentVariable("JAVA_VERSION").map { it.toInt() }.getOrElse(21)
 
 plugwright {
     testsDir.set(file("src/test/e2e"))
@@ -27,7 +29,7 @@ plugwright {
     environments {
         // Paper downloaded, patched, started and killed by plugwright itself.
         create("local", LocalMode) {
-            minecraftVersion.set("1.21.11")
+            minecraftVersion.set(mcVersion)
             acceptEula.set(true)
             // No runDir: the server goes to src/test/e2e/generated/local/run, which is where
             // the layout puts what an environment generates.
@@ -100,7 +102,7 @@ plugwright {
         create("stand", ExternalMode) {
             host.set("localhost")
             port.set(25565)
-            minecraftVersion.set("1.21.11")
+            minecraftVersion.set(mcVersion)
             includeInMatrix.set(false)
             joinThrottleMs.set(500)
 
@@ -207,6 +209,6 @@ tasks.withType<JavaCompile> {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(javaVersion))
     }
 }
