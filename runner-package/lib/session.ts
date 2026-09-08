@@ -70,11 +70,16 @@ export class Session {
     }
 
     createBot(options: BotConnectionOptions & { username: string }): Bot {
+        let version = options.version;
+        if (version && version.startsWith('26.1.')) {
+            version = '26.1';
+        }
+
         const bot = mineflayer.createBot({
             host: options.host,
             port: options.port,
             username: options.username,
-            version: options.version,
+            version,
             // A custom function here (instead of the 'microsoft' string) so profile/certificate
             // fetches are cached across bots for the same account — see microsoft-auth.ts.
             auth: options.auth === 'microsoft' ? microsoftAuthWithCache(options.username) : options.auth,
