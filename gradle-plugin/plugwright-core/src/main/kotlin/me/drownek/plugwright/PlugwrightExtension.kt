@@ -99,7 +99,7 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
 
     @Deprecated("Use environments { create(\"local\", LocalMode) { cleanExcludePatterns.set(...) } }")
     override val cleanExcludePatterns: ListProperty<String> = project.objects.listProperty(String::class.java).convention(
-        listOf("server.jar", "cache", "libraries")
+        listOf("server.jar", ".minecraft-version", "cache", "libraries")
     )
 
     @Deprecated("Use environments { create(\"local\", LocalMode) { downloadPlugins { ... } } }")

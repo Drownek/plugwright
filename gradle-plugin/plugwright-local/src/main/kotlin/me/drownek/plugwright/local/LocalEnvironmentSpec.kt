@@ -48,7 +48,7 @@ class LocalEnvironmentSpec(private val environmentName: String, objects: ObjectF
 
     /** Files/folders excluded from deletion during the clean task, relative to [runDir]. */
     val cleanExcludePatterns: ListProperty<String> = objects.listProperty(String::class.java).convention(
-        listOf("server.jar", "cache", "libraries")
+        listOf("server.jar", ".minecraft-version", "cache", "libraries")
     )
 
     /** When true, the plugin under test is not built or installed automatically. */

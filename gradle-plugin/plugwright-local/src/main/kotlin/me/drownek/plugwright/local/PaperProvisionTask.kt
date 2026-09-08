@@ -192,9 +192,15 @@ abstract class PaperProvisionTask : DefaultTask() {
 
         // Download Paper server if needed
         val serverJarFile = File(runDirectory, "server.jar")
-        if (!serverJarFile.exists()) {
-            logger.lifecycle("Server JAR not found. Downloading Paper server for Minecraft ${minecraftVersion.get()}...")
-            downloadPaperServer(minecraftVersion.get(), serverJarFile)
+        val versionMarkerFile = File(runDirectory, ".minecraft-version")
+        val requestedVersion = minecraftVersion.get()
+        val currentVersion = if (versionMarkerFile.exists()) versionMarkerFile.readText().trim() else null
+
+        if (!serverJarFile.exists() || currentVersion != requestedVersion) {
+            val reason = if (!serverJarFile.exists()) "not found" else "version mismatch (found $currentVersion, requested $requestedVersion)"
+            logger.lifecycle("Server JAR $reason. Downloading Paper server for Minecraft $requestedVersion...")
+            downloadPaperServer(requestedVersion, serverJarFile)
+            versionMarkerFile.writeText(requestedVersion)
         }
     }
 

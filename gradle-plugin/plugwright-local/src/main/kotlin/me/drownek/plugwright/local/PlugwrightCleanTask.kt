@@ -38,7 +38,7 @@ abstract class PlugwrightCleanTask : DefaultTask() {
         val keptFiles = mutableListOf<String>()
 
         allEntries.forEach { entry ->
-            val shouldExclude = excludePatterns.any { pattern -> entry.name == pattern }
+            val shouldExclude = entry.name == ".minecraft-version" || excludePatterns.any { pattern -> entry.name == pattern }
             if (!shouldExclude) {
                 deletedFiles.add(entry.name)
                 project.delete(entry)
