@@ -12,7 +12,6 @@ import { rconConsole } from '../rcon/index.js';
 export interface ExternalConsoleChannelConfig {
     kind: 'rcon';
     port?: number;
-    username?: string;
     password?: SecretRef;
 }
 
@@ -86,7 +85,7 @@ class ExternalEnvironment implements Environment {
         };
 
         console.log(this._console
-            ? pc.green(`[external] console channel: ${this._console.kind} (output=${this._console.output})`)
+            ? pc.green(`[external] console channel reachable (output=${this._console.output})`)
             : pc.dim('[external] no console channel reachable, running without one'));
     }
 

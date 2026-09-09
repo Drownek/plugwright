@@ -29,7 +29,7 @@ installSourceMapSupport();
 export { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator };
 export { PlayerWrapper };
 export { ServerWrapper } from './lib/server.js';
-export { test, opTest, describe, beforeEach, afterEach } from './lib/test-registry.js';
+export { test, describe, beforeEach, afterEach } from './lib/test-registry.js';
 export type { TestOptions, TestCase, SerialOptions, SerialBlock, RequiresMap } from './lib/test-registry.js';
 export { expect } from './lib/matchers.js';
 export { loadRunnerConfig, resolveSecret, isSecretRef } from './lib/config.js';
@@ -45,6 +45,8 @@ export { AccountPool } from './lib/account.js';
 export type { Account, AccountsConfig } from './lib/account.js';
 export { externalEnvironment };
 export type { ExternalEnvironmentConfig, ExternalConsoleChannelConfig } from './lib/environments/external.js';
+export { rconConsole, RconConnection } from './lib/rcon/index.js';
+export type { RconConsoleConfig } from './lib/rcon/index.js';
 
 /**
  * `local` and `external` are built into this package; anything else is a third-party mode,
@@ -109,11 +111,11 @@ export async function runTestSession(config: RunnerConfig = loadRunnerConfig()):
 
     let exitCode = 0;
 
-    await env.setup(session);
-    session.refreshConsole();
-    await plugins.setup(session);
-
     try {
+        await env.setup(session);
+        session.refreshConsole();
+        await plugins.setup(session);
+
         const connOpts = env.connection();
 
         /** Why a test should not run, or null to run it. Checked in order: name exclude,
@@ -337,7 +339,7 @@ export async function runPingSession(config: RunnerConfig = loadRunnerConfig()):
         await plugins.setup(session);
 
         if (env.capabilities.console) {
-            console.log(pc.green(`console: reachable (${session.console?.kind}, output=${session.console?.output})`));
+            console.log(pc.green(`console: reachable (output=${session.console?.output})`));
         } else {
             console.log(pc.yellow('console: unavailable'));
             problems.push('no console channel could be reached');
@@ -349,10 +351,15 @@ export async function runPingSession(config: RunnerConfig = loadRunnerConfig()):
                 account = await pool.lease();
                 await env.beforeJoin?.();
                 const connOpts = env.connection();
-                const bot = session.createBot({ ...connOpts, auth: account.auth, username: account.username });
+                const botOptions = {
+                    ...connOpts,
+                    auth: account.auth,
+                    profilesFolder: account.microsoftCacheDir,
+                };
+                const bot = session.createBot({ ...botOptions, username: account.username });
                 const player = new PlayerWrapper(bot, session);
                 player._captureSpawnPromise();
-                player._setBotOptions({ ...connOpts, auth: account.auth });
+                player._setBotOptions(botOptions);
                 player._setAccount(account);
                 await player.join();
                 console.log(pc.green(`auth: "${account.username}" connected and authenticated`));

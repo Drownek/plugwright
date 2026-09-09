@@ -6,7 +6,7 @@ test('navigate through paginated GUI', async ({ player }) => {
     const gui = await player.gui({ title: 'Warps' });
     
     // verify page 1
-    const spawnItem = gui.locator(i => i.getDisplayName().includes('Spawn'));
+    const spawnItem = gui.locator(i => i.displayName.includes('Spawn'));
     await expect.poll(() => spawnItem.displayName()).toContain('Spawn');
     
     // click arrow
@@ -14,7 +14,7 @@ test('navigate through paginated GUI', async ({ player }) => {
     await nextButton.click();
     
     // verify page 2 without reopening the GUI
-    const arenaItem = gui.locator(i => i.getDisplayName().includes('Arena'));
+    const arenaItem = gui.locator(i => i.displayName.includes('Arena'));
     
     // This expects the item to eventually appear on the same GUI instance
     await expect.poll(() => arenaItem.displayName()).toContain('Arena');

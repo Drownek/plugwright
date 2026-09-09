@@ -14,7 +14,6 @@ export function rconConsole(config: RconConsoleConfig): ServerConsole {
     const connection = new RconConnection(config.host, config.port, config.password);
 
     return {
-        kind: 'rcon',
         output: 'responses',
 
         async probe(): Promise<boolean> {

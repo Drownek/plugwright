@@ -88,7 +88,7 @@ Creates a locator for items matching the predicate.
 const compass = gui.locator(i => i.name === 'compass');
 
 // By display name
-const itemByName = gui.locator(i => i.getDisplayName().includes('Session'));
+const itemByName = gui.locator(i => i.displayName.includes('Session'));
 
 // By lore
 const itemByLore = gui.locator(i => i.hasLore('Click to view'));
@@ -198,7 +198,7 @@ test('clicking GUI item triggers callback', async ({ player }) => {
   player.chat('/example gui-settings');
   
   const gui = await player.gui({ title: 'guiSettings' });
-  const item = gui.locator(item => item.getDisplayName().includes('guiItemInfo'));
+  const item = gui.locator(item => item.displayName.includes('guiItemInfo'));
   
   await item.click();
   await expect(player).toHaveReceivedMessage('You clicked on item');
@@ -232,7 +232,7 @@ test('navigate through pages', async ({ player }) => {
   const gui = await player.gui({ title: 'Warps' });
   
   // Check first page
-  const firstItem = gui.locator(i => i.getDisplayName().includes('Spawn'));
+  const firstItem = gui.locator(i => i.displayName.includes('Spawn'));
   await firstItem.click();
   
   // Reopen and check next page
@@ -240,7 +240,7 @@ test('navigate through pages', async ({ player }) => {
   const nextButton = gui.locator(i => i.name === 'arrow');
   await nextButton.click();
   
-  const secondItem = gui.locator(i => i.getDisplayName().includes('Arena'));
+  const secondItem = gui.locator(i => i.displayName.includes('Arena'));
   await expect.poll(() => secondItem.displayName()).toContain('Arena');
 });
 ```

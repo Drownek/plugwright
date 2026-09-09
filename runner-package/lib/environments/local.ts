@@ -54,13 +54,15 @@ export class LocalEnvironment implements Environment {
         this.serverProcess = serverProcess;
         this._installProcessGuards(serverProcess);
 
-        await this._waitForServerStart(serverProcess);
-        console.log(`${pc.green(pc.bold('Server started successfully'))}\n`);
-
-        // stdout/stderr continue to feed the full console log — this is what makes
+        // stdout/stderr continuously feed the full console log — this is what makes
         // `consoleOutput: 'full'` true and `expect(server).toHaveReceivedMessage` work.
         serverProcess.stdout.on('data', (data: Buffer) => session.writeConsoleOutput(data));
         serverProcess.stderr.on('data', (data: Buffer) => session.writeConsoleOutput(data));
+        // Ignore EPIPE if server process terminates before/during teardown stdin writes.
+        serverProcess.stdin.on('error', () => { /* ignore */ });
+
+        await this._waitForServerStart(serverProcess);
+        console.log(`${pc.green(pc.bold('Server started successfully'))}\n`);
 
         // Connect to the local server's RCON for sending commands. RCON gives a proper
         // synchronous response per command, unlike the old stdin `/say <syncId>` trick.
@@ -154,42 +156,42 @@ export class LocalEnvironment implements Environment {
     }
 
     private _waitForServerStart(serverProcess: ChildProcessWithoutNullStreams): Promise<void> {
-        const session = this.session!;
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
+                cleanup();
                 reject(new Error('Server failed to start within 120 seconds'));
             }, 120000);
 
             const dataHandler = (data: Buffer): void => {
                 const output = data.toString();
-                session.writeConsoleOutput(data);
-
                 if (output.includes('Done (')) {
-                    clearTimeout(timeout);
-                    serverProcess.stdout.removeListener('data', dataHandler);
-                    serverProcess.stderr.removeListener('data', stderrHandler);
+                    cleanup();
                     setTimeout(resolve, 3000);
                 }
             };
 
-            const stderrHandler = (data: Buffer): void => {
-                session.writeConsoleOutput(data);
+            const errorHandler = (err: Error): void => {
+                cleanup();
+                reject(new Error(`Failed to start server: ${err.message}`));
+            };
+
+            const exitHandler = (code: number | null): void => {
+                if (code !== null && code !== 0) {
+                    cleanup();
+                    reject(new Error(`Server exited with code ${code} before becoming ready`));
+                }
+            };
+
+            const cleanup = (): void => {
+                clearTimeout(timeout);
+                serverProcess.stdout.removeListener('data', dataHandler);
+                serverProcess.removeListener('error', errorHandler);
+                serverProcess.removeListener('exit', exitHandler);
             };
 
             serverProcess.stdout.on('data', dataHandler);
-            serverProcess.stderr.on('data', stderrHandler);
-
-            serverProcess.on('error', (err: Error) => {
-                clearTimeout(timeout);
-                reject(new Error(`Failed to start server: ${err.message}`));
-            });
-
-            serverProcess.on('exit', (code: number | null) => {
-                if (code !== null && code !== 0) {
-                    clearTimeout(timeout);
-                    reject(new Error(`Server exited with code ${code} before becoming ready`));
-                }
-            });
+            serverProcess.on('error', errorHandler);
+            serverProcess.on('exit', exitHandler);
         });
     }
 

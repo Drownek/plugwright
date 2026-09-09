@@ -7,7 +7,7 @@ import { expect, test } from '@plugwright/runner';
 test('multi-bot teleportation', async ({ player, createPlayer }) => {
     // This executes op server command, and we wait for response from server
     // so when await completes, we are sure player is op.
-    // This can be also done with defining test as `opTest` instead of `test` or even within `beforeEach` block.
+    // This can be also done within a `beforeEach` block.
     await player.makeOp();
     await player.setGameMode('creative');
 

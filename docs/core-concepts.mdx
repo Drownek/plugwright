@@ -27,7 +27,7 @@ test('Click an item in GUI', async ({ player }) => {
     const gui = await player.gui({ title: 'Menu' });
     
     // Find an item by its internal name or display name
-    const shopItem = gui.locator(i => i.getDisplayName().includes('Shop'));
+    const shopItem = gui.locator(i => i.displayName.includes('Shop'));
     await shopItem.click();
     
     await expect(player).toHaveReceivedMessage('You opened the shop!');

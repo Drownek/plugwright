@@ -136,16 +136,6 @@ export function test(name: string, fnOrOptions: TestFn | TestOptions, maybeFn?: 
     }
 }
 
-export function opTest(name: string, fn: TestFn): void;
-export function opTest(name: string, options: TestOptions, fn: TestFn): void;
-export function opTest(name: string, fnOrOptions: TestFn | TestOptions, maybeFn?: TestFn): void {
-    const options = typeof fnOrOptions === 'function' ? {} : fnOrOptions;
-    const fn = typeof fnOrOptions === 'function' ? fnOrOptions : maybeFn!;
-    registerTest(name, options, async (context: TestContext) => {
-        await context.player.makeOp();
-        await fn(context);
-    });
-}
 
 function describeImpl(label: string, fn: () => void): void {
     scopeStack.push({ label, beforeHooks: [], afterHooks: [] });

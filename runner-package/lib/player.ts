@@ -289,7 +289,8 @@ export class PlayerWrapper {
 
         await poll(
             () => {
-                const pos = this.bot.entity.position;
+                const pos = this.bot.entity?.position;
+                if (!pos) return undefined;
                 const close =
                     Math.abs(pos.x - x) < 1 &&
                     Math.abs(pos.y - y) < 1 &&

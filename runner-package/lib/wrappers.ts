@@ -37,23 +37,47 @@ export class GuiItemLocator {
     }
 
     /**
-     * Gets the lore text of the located item.
-     * Re-queries the GUI each time it's called.
-     */
-    loreText(): string {
-        const item = this._tryFind();
-        if (!item) return '';
-        return item.getLore().join(' ');
-    }
-
-    /**
      * Gets the display name of the located item.
      * Re-queries the GUI each time it's called.
      */
     displayName(): string {
         const item = this._tryFind();
         if (!item) return '';
-        return item.getDisplayName();
+        return item.displayName;
+    }
+
+    /**
+     * Alias for `displayName()`.
+     */
+    getDisplayName(): string {
+        return this.displayName();
+    }
+
+    /**
+     * Gets the lore lines of the located item.
+     * Re-queries the GUI each time it's called.
+     */
+    lore(): string[] {
+        const item = this._tryFind();
+        if (!item) return [];
+        return item.lore;
+    }
+
+    /**
+     * Alias for `lore()`.
+     */
+    getLore(): string[] {
+        return this.lore();
+    }
+
+    /**
+     * Gets the lore text of the located item (joined by space).
+     * Re-queries the GUI each time it's called.
+     */
+    loreText(): string {
+        const item = this._tryFind();
+        if (!item) return '';
+        return item.lore.join(' ');
     }
 
     /**
@@ -89,8 +113,8 @@ export class GuiItemLocator {
         const rows = items.map(item => ({
             slot: item.slot,
             name: item.name,
-            displayName: item.getDisplayName(),
-            lore: item.getLore().join(' | ')
+            displayName: item.displayName,
+            lore: item.lore.join(' | ')
         }));
 
         if (rows.length === 0) {
@@ -277,6 +301,14 @@ export class ItemWrapper {
         return String(raw);
     }
 
+    get displayName(): string {
+        return this.getDisplayName();
+    }
+
+    get lore(): string[] {
+        return this.getLore();
+    }
+
     getDisplayName(): string {
         const components = (this.raw as any).components;
         if (Array.isArray(components)) {
@@ -378,8 +410,8 @@ export class GuiWrapper {
             throw new Error(`[GUI] Failed to click: Item not found matching criteria in "${this.title}"`);
         }
 
-        const lore = item.getLore();
-        console.log(`[GUI] Clicking item: ${item.getDisplayName()}`);
+        const lore = item.lore;
+        console.log(`[GUI] Clicking item: ${item.displayName}`);
         console.log(`  Material: ${item.name}`);
         console.log(`  Slot: ${item.slot}`);
         if (lore.length > 0) {
@@ -451,7 +483,7 @@ export function createPlayerExtensions(bot: Bot) {
                     const matchedItem = items.find(itemMatcher);
 
                     if (matchedItem) {
-                        console.log(`[Player] Found GUI item: ${matchedItem.getDisplayName()} at slot ${matchedItem.slot}`);
+                        console.log(`[Player] Found GUI item: ${matchedItem.displayName} at slot ${matchedItem.slot}`);
                         return matchedItem;
                     }
                 }
@@ -483,8 +515,8 @@ export function createPlayerExtensions(bot: Bot) {
                     const matchedItem = items.find(itemMatcher);
 
                     if (matchedItem) {
-                        const lore = matchedItem.getLore();
-                        console.log(`[Player] Clicking GUI item: ${matchedItem.getDisplayName()}`);
+                        const lore = matchedItem.lore;
+                        console.log(`[Player] Clicking GUI item: ${matchedItem.displayName}`);
                         console.log(`  Material: ${matchedItem.name}`);
                         console.log(`  Slot: ${matchedItem.slot}`);
                         if (lore.length > 0) {

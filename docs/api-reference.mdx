@@ -31,7 +31,7 @@ Waits for a GUI to open matching the title and returns a live handle.
 
 ```javascript
 const gui = await player.gui({ title: 'Shop' });
-const button = gui.locator(i => i.getDisplayName().includes('Confirm'));
+const button = gui.locator(i => i.displayName.includes('Confirm'));
 ```
 
 ### `player.makeOp()`

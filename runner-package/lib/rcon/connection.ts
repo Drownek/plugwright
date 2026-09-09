@@ -34,7 +34,14 @@ export class RconConnection {
             this.socket = socket;
 
             let hasConnected = false;
+            const connectTimer = setTimeout(() => {
+                if (!hasConnected) {
+                    socket.destroy(new Error(`RCON connection to ${this.host}:${this.port} timed out after 10000ms`));
+                }
+            }, 10000);
+
             socket.once('connect', () => {
+                clearTimeout(connectTimer);
                 hasConnected = true;
                 socket.setNoDelay(true);
                 this.pendingAuth = {
@@ -48,7 +55,10 @@ export class RconConnection {
             socket.on('data', (chunk) => this.onData(chunk));
 
             socket.on('error', (err) => {
-                this.connectPromise = null;
+                clearTimeout(connectTimer);
+                if (this.socket === socket) {
+                    this.connectPromise = null;
+                }
                 if (!hasConnected) {
                     reject(err);
                 }
@@ -61,9 +71,12 @@ export class RconConnection {
             });
 
             socket.once('close', () => {
-                this.connectPromise = null;
-                this.socket = null;
-                this.inbound = Buffer.alloc(0);
+                clearTimeout(connectTimer);
+                if (this.socket === socket) {
+                    this.connectPromise = null;
+                    this.socket = null;
+                    this.inbound = Buffer.alloc(0);
+                }
                 const closedError = new Error('RCON connection closed');
                 this.pendingAuth?.reject(closedError);
                 this.pendingAuth = null;
@@ -80,11 +93,20 @@ export class RconConnection {
 
         while (this.inbound.length >= 4) {
             const size = this.inbound.readInt32LE(0);
+            if (size < 10 || size > 1024 * 1024) {
+                // Invalid packet size: minimum RCON packet size is 10 (4 id + 4 type + 1 body null + 1 pad null).
+                this.inbound = Buffer.alloc(0);
+                break;
+            }
             if (this.inbound.length < 4 + size) break;
 
             const body = this.inbound.subarray(4, 4 + size);
             this.inbound = this.inbound.subarray(4 + size);
-            this.handlePacket(decodePacketBody(body));
+            try {
+                this.handlePacket(decodePacketBody(body));
+            } catch (err) {
+                console.error(`[rcon] Failed to decode packet: ${(err as Error).message}`);
+            }
         }
     }
 
@@ -143,10 +165,8 @@ export class RconConnection {
         });
     }
 
-    execute(cmd: string): void {
-        this.executeAndWait(cmd, 5000).catch((error: Error) => {
-            console.error(`[rcon] command failed: ${cmd}: ${error.message}`);
-        });
+    execute(cmd: string, timeoutMs: number = 5000): Promise<string> {
+        return this.executeAndWait(cmd, timeoutMs);
     }
 
     disconnect(): void {

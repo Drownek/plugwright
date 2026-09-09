@@ -14,7 +14,7 @@ test('admin can interact with gui', async ({ player }) => {
   const gui = await player.gui({ title: 'guiSettings' });
 
   // 3. Interact: Click the item named "guiItemInfo"
-  await gui.locator(item => item.getDisplayName().includes('guiItemInfo')).click();
+  await gui.locator(item => item.displayName.includes('guiItemInfo')).click();
 
   // 4. Assertion: Check for the callback message
   await expect(player).toHaveReceivedMessage('You clicked on item');

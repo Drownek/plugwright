@@ -19,7 +19,7 @@ test('warp GUI lists available warps', async ({ player }) => {
   const gui = await player.gui({ title: 'Warps' });
   
   const spawn = gui.locator(item => 
-    item.getDisplayName().includes('Spawn')
+    item.displayName.includes('Spawn')
   );
   await expect.poll(() => spawn.displayName()).toContain('Spawn');
   
