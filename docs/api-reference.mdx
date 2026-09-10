@@ -3,6 +3,68 @@ title: "API Reference"
 description: "Detailed API documentation for advanced users."
 ---
 
+## Test Runner API
+
+### `test(name, options?, fn)`
+
+Defines an individual test case.
+
+<ParamField path="name" type="string" required>
+  The title/description of the test.
+</ParamField>
+
+<ParamField path="options.concurrency" type="number">
+  Runs N independent instances of the test simultaneously with distinct leased accounts to detect race conditions.
+</ParamField>
+
+<ParamField path="options.requires" type="Partial<EnvironmentCapabilities>">
+  Environment capabilities required for this test to execute.
+</ParamField>
+
+<ParamField path="options.environments" type="string[]">
+  List of environment names where this test is allowed to run.
+</ParamField>
+
+```typescript
+import { test, expect } from '@plugwright/runner';
+
+test('race condition check', { concurrency: 3 }, async ({ player }) => {
+  player.chat('/claim');
+  await expect(player).toHaveReceivedMessage(/Claimed|already claimed/);
+});
+```
+
+### `describe.serial(name, options?, fn)`
+
+Groups tests that execute sequentially while retaining the same player/bot session and leased account across all tests in the block.
+
+<ParamField path="name" type="string" required>
+  The title/description of the serial block.
+</ParamField>
+
+<ParamField path="options.account" type="string">
+  Specific account name to lease from the environment's account pool.
+</ParamField>
+
+<ParamField path="options.concurrency" type="number">
+  Runs N independent copies of the entire ordered serial chain at the same time.
+</ParamField>
+
+```typescript
+import { describe, test, expect } from '@plugwright/runner';
+
+describe.serial('kit lifecycle', () => {
+  test('claim kit', async ({ player }) => {
+    player.chat('/kit starter');
+  });
+
+  test('is on cooldown', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('cooldown');
+  });
+});
+```
+
 ## `player` / `bot` Object
 
 The `player` or `bot` object represents a real Minecraft client connected to the test server.

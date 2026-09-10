@@ -1,0 +1,274 @@
+---
+title: "Migration Guide (v2 to v3)"
+description: "Migrate your Plugwright test suites and build configuration from v2 to v3."
+---
+
+Plugwright v3 introduces multi-environment execution, external server and staging stands support, runner plugins, concurrent bot testing, and an updated workspace layout.
+
+Migrating from v2 to v3 is straightforward, and the Gradle plugin handles most workspace structure changes automatically on the first run.
+
+---
+
+## Step-by-Step Migration Walkthrough
+
+Here is the exact step-by-step path to upgrade a v2 project to v3:
+
+### 1. Update the Gradle Plugin Version
+In your `build.gradle.kts`, bump the plugin version to `3.0.0` (or check for the latest `3.x` release):
+
+```kotlin
+plugins {
+    // Before (v2)
+    // id("io.github.drownek.plugwright") version "2.0.4"
+
+    // After (v3)
+    id("io.github.drownek.plugwright") version "3.0.0" // or the latest 3.x version
+}
+```
+
+### 2. Update `package.json` and Install
+In `src/test/e2e/package.json`, replace `@drownek/plugwright` with `@plugwright/runner` using version `^3.0.0` (or matching your Gradle plugin's 3.x version), then run `npm install`:
+
+```json
+{
+  "devDependencies": {
+    "@plugwright/runner": "^3.0.0"
+  }
+}
+```
+
+### 3. Update Spec Imports
+In your TypeScript test files, rename the package import:
+
+```typescript
+// Before (v2)
+import { test, expect } from '@drownek/plugwright';
+
+// After (v3)
+import { test, expect } from '@plugwright/runner';
+```
+
+### 4. Run `gradlew plugwrightTest`
+Run your test task:
+
+```bash
+./gradlew plugwrightTest
+```
+
+On first run, Plugwright detects the legacy v2 layout and performs an automatic migration:
+- Moves your `*.spec.ts` files from `src/test/e2e/` into `src/test/e2e/tests/` (preserving subdirectories).
+- Updates `src/test/e2e/tsconfig.json` to include `"tests/**/*.ts"` and `"plugins/**/*.ts"`.
+- Compiles the tests and runs the suite.
+
+```text
+Moved 13 spec file(s) into .../src/test/e2e/tests — plugwright looks for specs under 'tests' now.
+Updated .../src/test/e2e/tsconfig.json for the new layout
+```
+
+---
+
+## Recommended Configuration Update
+
+While v3 retains compatibility with the old flat `plugwright { ... }` block, it is recommended to adopt the new `environments` syntax. Notice that server-specific settings (`minecraftVersion`, `acceptEula`, `downloadPlugins`) now belong inside `environments.create("local", LocalMode)`:
+
+```kotlin
+// Before (v2 flat configuration)
+plugwright {
+    minecraftVersion.set("26.1.2")
+    acceptEula.set(true)
+    testsDir.set(file("src/test/e2e"))
+    downloadPlugins {
+        url("https://hangarcdn.papermc.io/plugins/HelpChat/PlaceholderAPI/versions/2.11.6/PAPER/PlaceholderAPI-2.11.6.jar")
+    }
+    downloadNode.set(System.getenv("CI") != "true")
+}
+```
+
+```kotlin
+// After (v3 environments DSL)
+import me.drownek.plugwright.local.LocalMode
+
+plugwright {
+    environments.create("local", LocalMode) {
+        minecraftVersion.set("26.1.2")
+        acceptEula.set(true)
+        downloadPlugins {
+            url("https://hangarcdn.papermc.io/plugins/HelpChat/PlaceholderAPI/versions/2.11.6/PAPER/PlaceholderAPI-2.11.6.jar")
+        }
+    }
+    testsDir.set(file("src/test/e2e"))
+    downloadNode.set(System.getenv("CI") != "true")
+}
+```
+
+<Note>
+Without `environments`, the flat properties define an implicit `local` environment. They are deprecated and slated for removal.
+</Note>
+
+---
+
+## API Adjustments & Modernizations
+
+### Awaiting `server.execute(...)`
+In v3, `server.execute(...)` communicates with the console channel asynchronously and returns a `Promise<string>`.
+While unawaited calls will often still fire in the background (similar to v2 behavior), awaiting it is strongly recommended so you can catch errors or read command output reliably:
+
+```typescript
+// Recommended in v3:
+await server.execute(`give ${player.username} diamond 64`);
+```
+
+### GUI Item Display Name Property
+Instead of invoking `item.getDisplayName()`, you can now use the clean property accessor `item.displayName`:
+
+```typescript
+// Before (v2)
+const spawn = gui.locator(item => 
+    item.getDisplayName().includes('Spawn')
+);
+
+// After (v3)
+const spawn = gui.locator(item => 
+    item.displayName.includes('Spawn')
+);
+```
+
+### Built-in `player.clearInventory(...)`
+Avoid manual command workarounds to reset a player's inventory. `player.clearInventory` clears the inventory and waits until client-side inventory state reflects it:
+
+```typescript
+// Clear entire inventory
+await player.clearInventory();
+
+// Or clear specific item
+await player.clearInventory('diamond');
+```
+
+---
+
+## Directory & Git Ignore Updates
+
+The runtime directories are now isolated per environment:
+- **Server files**: Now live in `<testsDir>/generated/<environment>/run/` (e.g. `src/test/e2e/generated/local/run/`).
+- **Compiled specs**: Output to `src/test/e2e/dist/`.
+
+Make sure `src/test/e2e/.gitignore` contains:
+```gitignore
+node_modules
+dist
+generated
+.npmrc
+```
+You can safely remove root `run/` from your repository's top-level `.gitignore` if it's no longer used.
+
+---
+
+## New Features Available in v3
+
+Plugwright v3 brings major capabilities designed for real-world server environments, race condition detection, and complex gameplay flows:
+
+### 1. Stateful Multi-Step Tests: `describe.serial`
+By default, every test gets a fresh player and an isolated connection. With `describe.serial`, a single player connection is maintained across all tests in the block. This makes it effortless to test lifecycles such as kit cooldowns, auction cycles, multi-step quests, and economy balances without cumbersome workarounds.
+
+```typescript
+import { describe, test, expect, sleep } from '@plugwright/runner';
+
+describe.serial('kit cooldown lifecycle', () => {
+  test('claims the starter kit', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('Received starter kit');
+  });
+
+  test('kit is immediately on cooldown', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('Kit is on cooldown');
+  });
+
+  test('can claim again after waiting', async ({ player }) => {
+    await sleep(5000);
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('Received starter kit');
+  });
+});
+```
+
+You can also name retained secondary bots across steps using `createPlayer({ as: 'buyer' })`. [Read more in Writing Tests &rsaquo; describe.serial](/writing-tests#tests-that-share-a-player-describeserial).
+
+---
+
+### 2. Race Condition Testing: `concurrency: N`
+Catching bugs like item duping, chest snipe, or auction desync requires multiple players hitting the same logic simultaneously. Plugwright v3 introduces first-class concurrency at the test and serial block level:
+
+```typescript
+test('only one player can loot the treasure chest', { concurrency: 5 }, async ({ player }) => {
+  player.chat('/lootchest claim');
+  // Passes only if all 5 concurrent instances observe expected outcomes without server errors
+  await expect(player).toHaveReceivedMessage(/Claimed reward|Chest already looted/);
+});
+```
+
+Plugwright spins up N isolated runner instances and leases distinct accounts from the pool simultaneously. [Read more in Writing Tests &rsaquo; concurrency](/writing-tests#racing-bots-against-each-other-concurrency).
+
+---
+
+### 3. Remote Stands & External Servers (`ExternalMode`)
+In addition to spinning up ephemeral local Paper servers via `LocalMode`, v3 natively supports testing against remote staging servers, production mirrors, or persistent local stands using `ExternalMode`.
+
+- **Account Pools**: Safely leases and releases pre-configured test bot accounts.
+- **RCON Console Channel**: Execute server commands and parse console responses via secure RCON.
+- **Stand Reset & Ping Tasks**: Auto-generated `./gradlew <env>Ping` and `./gradlew <env>Clean` tasks.
+
+```kotlin
+import me.drownek.plugwright.external.ExternalMode
+
+plugwright {
+    environments.create("stand", ExternalMode) {
+        server {
+            host.set("staging.myserver.net")
+            port.set(25565)
+        }
+        rcon {
+            port.set(25575)
+            password.set(System.getenv("STAND_RCON_PASSWORD"))
+        }
+        accounts {
+            account("bot_1", System.getenv("BOT1_PASSWORD"))
+            account("bot_2", System.getenv("BOT2_PASSWORD"))
+        }
+    }
+}
+```
+[Read more in External Servers](/external-servers).
+
+---
+
+### 4. Runner Plugins & Authentication (e.g. AuthMe)
+Runner plugins extend test execution with custom hooks, fixtures, matchers, and auth adapters. Plugwright v3 provides first-party packages like `@plugwright/auth-authme` (handling login/register dialogs, session resumption, and password secrecy).
+
+Plugins can be declared directly in your Gradle environment configuration:
+```kotlin
+environments.create("stand", ExternalMode) {
+    plugins {
+        plugin("@plugwright/auth-authme") {
+            config.set(mapOf("registerCommand" to "/register", "loginCommand" to "/login"))
+        }
+    }
+}
+```
+[Read more in Runner Plugins](/plugins).
+
+---
+
+### 5. Private npm Registries
+If your organization distributes internal matchers, runner plugins, or fixtures via private npm registries, declare them right in your `build.gradle.kts`:
+
+```kotlin
+plugwright {
+    npm {
+        registry("@myorg", "https://npm.pkg.github.com") {
+            authToken.set(System.getenv("GITHUB_TOKEN"))
+        }
+    }
+}
+```
+Plugwright generates the appropriate `.npmrc` scoped configuration automatically before installing test dependencies. [Read more in Configuration](/configuration#npm-registries).

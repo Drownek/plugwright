@@ -10,21 +10,10 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaSc
 ![Video showcase demonstrating Plugwright bots joining a server, moving, and interacting with GUIs](https://github.com/user-attachments/assets/0272a6d9-f9ab-4486-8bf3-ee5909a10ee9)
 
 <details>
-<summary>⚠️ <strong>Upgrading from Paperwright (v1.x)? Click here for migration steps.</strong></summary>
-<br>
-This framework has been renamed from Paperwright to Plugwright. If you are upgrading from an older version, update the following:
-
-1. Change `id("io.github.drownek.paperwright")` to `id("io.github.drownek.plugwright")`.
-2. Rename your `paperwright { ... }` configuration block to `plugwright { ... }` and Gradle tasks (e.g. `./gradlew paperwrightTest` to `./gradlew plugwrightTest`).
-3. In your `package.json`, change `@drownek/paperwright` to `@plugwright/runner` and run `npm install`.
-4. Update your test files: `import { test } from '@drownek/paperwright'` to `import { test } from '@plugwright/runner'`.
-5. Change your CI to use `drownek/plugwright-action@v1`.
-</details>
-
-<details>
 <summary>⚠️ <strong>Upgrading from Plugwright 2.x? The npm package moved.</strong></summary>
 <br>
 The runner is published as <code>@plugwright/runner</code> from 3.0 onwards; <code>@drownek/plugwright</code> stops receiving releases at 2.x. Change the dependency in your <code>package.json</code>, run <code>npm install</code>, and update the import in your test files. Nothing else moves: the Gradle plugin id stays <code>io.github.drownek.plugwright</code>.
+See the full <a href="https://plugwright.dev/migration-v3">v2 to v3 Migration Guide</a> for layout changes, configuration updates, and new features.
 </details>
 
 ## Features
