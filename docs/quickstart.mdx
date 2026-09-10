@@ -21,16 +21,21 @@ description: "Start running your first test in less than 5 minutes."
     }
 
     plugwright {
-        minecraftVersion.set("1.19.4")
-        testsDir.set(file("src/test/e2e"))
-        acceptEula.set(true)
-
-        // Download some dependencies your plugin might need
-        downloadPlugins {
-            url("https://url.to/plugin1.jar")
-            url("https://url.to/plugin2.jar")
-            // ... etc
+        environments {
+            // Paper downloaded, patched, started and killed by plugwright itself.
+            create("local", LocalMode) {
+                minecraftVersion.set("1.19.4")
+                acceptEula.set(true)
+                // Download some dependencies your plugin might need
+                downloadPlugins {
+                    url("https://url.to/plugin1.jar")
+                    url("https://url.to/plugin2.jar")
+                    // ... etc
+                }
+            }
         }
+
+        testsDir.set(file("src/test/e2e"))
 
         // If true, always downloads and uses an isolated Node.js version, ignoring the system Node.
         downloadNode.set(true)
