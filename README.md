@@ -48,7 +48,7 @@ Before you begin, you need:
 import me.drownek.plugwright.local.LocalMode
 
 plugins {
-    id("io.github.drownek.plugwright") version "2.0.3"
+    id("io.github.drownek.plugwright") version "3.0.0"
 }
 
 plugwright {

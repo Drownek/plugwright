@@ -56,6 +56,12 @@ function bumpVersionFiles(newVersion, isPrerelease) {
         /id\("io\.github\.drownek\.plugwright"\) version "[^"]+"/g,
         `id("io.github.drownek.plugwright") version "${newVersion}"`
     );
+
+    replaceRegexInFile(
+        "auth-authme-package/package.json",
+        /"@plugwright\/runner":\s*">=[^"]+"/g,
+        `"@plugwright/runner": ">=${newVersion}"`
+    );
 }
 
 async function main() {
