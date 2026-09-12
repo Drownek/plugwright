@@ -65,6 +65,31 @@ describe.serial('kit lifecycle', () => {
 });
 ```
 
+### `afterAll(fn)`
+
+Registers a hook that runs once per instance of the enclosing `describe.serial` block, after its last executed test — whether the block finished all its tests, stopped early on a failure, or a test in it was skipped. Only valid inside `describe.serial`. Not called if the block never got its player (the initial connect failed). A throwing hook is logged, not fatal.
+
+<ParamField path="fn" type="(ctx: TestContext) => Promise<void> | void" required>
+  The cleanup hook.
+</ParamField>
+
+```typescript
+import { describe, test, afterAll } from '@plugwright/runner';
+
+describe.serial('vip trial', () => {
+  test('grants the trial permission', async ({ player, server }) => {
+    await server.execute(`lp user ${player.username} permission settemp vip.trial true 15m`);
+  });
+
+  afterAll(async ({ player, server }) => {
+    // Runs even if a later test in the block fails or gets skipped.
+    await server.execute(`lp user ${player.username} permission unsettemp vip.trial`);
+  });
+
+  test('sees the vip shop', async ({ player }) => { /* ... */ });
+});
+```
+
 ## `player` / `bot` Object
 
 The `player` or `bot` object represents a real Minecraft client connected to the test server.

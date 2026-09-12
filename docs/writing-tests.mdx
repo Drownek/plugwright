@@ -189,6 +189,27 @@ Each test starts with a clear message buffer, so a message from an earlier step 
 
 A block can't contain another `describe.serial` — nesting one ordered chain inside another is a scheduling question the runner deliberately doesn't answer.
 
+### Cleanup that must run no matter what
+
+`beforeEach`/`afterEach` skip a test entirely once the block has stopped — that's the point, the rest of the chain never ran. But some cleanup (revoking a permission you granted mid-block, releasing something outside the game world) needs to happen once regardless of which test failed or got skipped. That's what `afterAll` is for:
+
+```typescript
+describe.serial('vip trial', () => {
+  test('grants the trial permission', async ({ player, server }) => {
+    await server.execute(`lp user ${player.username} permission settemp vip.trial true 15m`);
+  });
+
+  afterAll(async ({ player, server }) => {
+    // Runs once, even if a later test in the block fails or gets skipped.
+    await server.execute(`lp user ${player.username} permission unsettemp vip.trial`);
+  });
+
+  test('sees the vip shop', async ({ player }) => { /* ... */ });
+});
+```
+
+It runs once per instance of the block, after the last test that actually executed, right before the plugins' own `afterEach`. The one case it skips is a block that never got its player — nothing happened yet, so there's nothing to clean up. A hook that throws gets logged and otherwise ignored; it won't turn a passing block into a failure.
+
 ### Naming an account
 
 On a stand where one specific account carries the state a scenario needs — a permission group, a starting balance, a whitelist entry — name it:
