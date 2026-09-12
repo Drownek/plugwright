@@ -25,21 +25,6 @@ export class PlayerWrapper {
         return this.bot.username;
     }
 
-    /**
-     * @deprecated Use `player.gui({ title })` instead.
-     */
-    waitForGui!: (guiMatcher: (gui: GuiWrapper) => boolean, options?: { timeout?: number }) => Promise<GuiWrapper>;
-
-    /**
-     * @deprecated Use `gui.locator(predicate)` with expectations instead.
-     */
-    waitForGuiItem!: (itemMatcher: (item: ItemWrapper) => boolean, options?: { timeout?: number, pollingRate?: number }) => Promise<ItemWrapper>;
-
-    /**
-     * @deprecated Use `gui.locator(predicate).click()` instead.
-     */
-    clickGuiItem!: (itemMatcher: (item: ItemWrapper) => boolean, options?: { timeout?: number, pollingRate?: number }) => Promise<void>;
-
     gui!: (options: { title: string | RegExp; timeout?: number }) => Promise<LiveGuiHandle>;
     private serverWrapper?: ServerWrapper;
     private _botOptions?: BotConnectionOptions;
@@ -55,9 +40,6 @@ export class PlayerWrapper {
 
     private _bindExtensions(bot: Bot): void {
         const extensions = createPlayerExtensions(bot);
-        this.waitForGui = extensions.waitForGui.bind(this);
-        this.waitForGuiItem = extensions.waitForGuiItem.bind(this);
-        this.clickGuiItem = extensions.clickGuiItem.bind(this);
         this.gui = extensions.gui.bind(this);
     }
 

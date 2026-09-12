@@ -20,8 +20,8 @@ export function rconConsole(config: RconConsoleConfig): ServerConsole {
             try {
                 await connection.ensureConnected();
                 return true;
-            } catch {
-                return false;
+            } catch (err) {
+                throw err;
             }
         },
 

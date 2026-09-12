@@ -49,6 +49,7 @@ export class RconConnection {
                     reject: (err) => reject(err),
                 };
                 const id = this.nextId++;
+                if (this.nextId > 0x7fffffff) this.nextId = 1;
                 socket.write(encodePacket(id, PacketType.AUTH, this.password));
             });
 
@@ -143,6 +144,7 @@ export class RconConnection {
                     if (!socket) throw new Error('RCON connection is not open');
 
                     const id = this.nextId++;
+                    if (this.nextId > 0x7fffffff) this.nextId = 1;
                     
                     const result = await new Promise<string>((innerResolve, innerReject) => {
                         const timer = setTimeout(() => {
