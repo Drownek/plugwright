@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 
-import { runTestSession } from './runner.js';
+import { runTestSession, runPingSession } from './runner.js';
 
-runTestSession().catch((error: Error) => {
+const argv = process.argv.slice(2);
+
+async function main(): Promise<void> {
+    if (argv.includes('--ping')) {
+        await runPingSession();
+        return;
+    }
+    await runTestSession();
+}
+
+main().catch((error: Error) => {
     console.error('\nTest run failed:', error);
     process.exit(1);
 });

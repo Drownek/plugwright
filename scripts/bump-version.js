@@ -4,6 +4,14 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 const readline = require("readline");
 
+// Every npm package published out of this repo. They move as one version: a plugin package
+// and the runner it is written against are only recognisable as a matching pair if their
+// version numbers say so, and the plugin packages are useless on their own anyway.
+const NPM_PACKAGES = [
+    "runner-package",
+    "auth-authme-package",
+];
+
 function prompt(question) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); }));
@@ -41,19 +49,18 @@ function bumpVersionFiles(newVersion, isPrerelease) {
                 `id("io.github.drownek.plugwright") version "${newVersion}"`
             );
         }
-
-        // Matches any version after the package name, e.g., "@drownek/plugwright": "^1.x.x"
-        replaceRegexInFile(
-            "gradle-plugin/src/main/kotlin/me/drownek/plugwright/PlugwrightPlugin.kt",
-            /"@drownek\/plugwright": "\^[^"]+"/g,
-            `"@drownek/plugwright": "^${newVersion}"`
-        );
     }
 
     replaceRegexInFile(
         "example_plugin/build.gradle.kts",
         /id\("io\.github\.drownek\.plugwright"\) version "[^"]+"/g,
         `id("io.github.drownek.plugwright") version "${newVersion}"`
+    );
+
+    replaceRegexInFile(
+        "auth-authme-package/package.json",
+        /"@plugwright\/runner":\s*">=[^"]+"/g,
+        `"@plugwright/runner": ">=${newVersion}"`
     );
 }
 
@@ -84,20 +91,35 @@ async function main() {
     // update version.txt
     fs.writeFileSync("version.txt", newVersion + "\n");
 
-    // update runner-package/package.json
-    execSync(
-        `npm version ${newVersion} --no-git-tag-version --allow-same-version`,
-        { cwd: "runner-package", stdio: "inherit" }
-    );
+    // update each published package's package.json and its lockfile's own version field
+    for (const pkg of NPM_PACKAGES) {
+        console.log(`\nBumping ${pkg}...`);
+        execSync(
+            `npm version ${newVersion} --no-git-tag-version --allow-same-version`,
+            { cwd: pkg, stdio: "inherit" }
+        );
+    }
 
-    // update the lockfile in the example plugin
-    console.log("\nUpdating lockfile in example_plugin...");
-    execSync(
-        `npm install --package-lock-only`,
-        { cwd: "example_plugin/src/test/e2e", stdio: "inherit" }
-    );
+    // Refresh every lockfile that records the runner's version rather than its own.
+    //
+    // The plugin packages depend on the runner through `file:../runner-package`, and npm
+    // copies the linked package's version into their lockfiles. `npm version` does not
+    // rewrite that copy — only an install does — so without this the plugin packages ship a
+    // lockfile still naming the previous runner version.
+    const LOCKFILE_ONLY = [
+        ...NPM_PACKAGES.filter((pkg) => pkg !== "runner-package"),
+        "example_plugin/src/test/e2e",
+    ];
 
-    // bump version references in source files (docs and templates only for stable releases)
+    for (const dir of LOCKFILE_ONLY) {
+        console.log(`\nUpdating lockfile in ${dir}...`);
+        execSync(
+            `npm install --package-lock-only`,
+            { cwd: dir, stdio: "inherit" }
+        );
+    }
+
+    // bump version references in source files (docs only for stable releases)
     const changedSourceFiles = [
         "example_plugin/build.gradle.kts",
     ];
@@ -106,15 +128,13 @@ async function main() {
         changedSourceFiles.push(
             "README.md",
             "docs/quickstart.mdx",
-            "gradle-plugin/src/main/kotlin/me/drownek/plugwright/PlugwrightPlugin.kt",
         );
     }
 
     // commit version files (+ source files if updated)
     const filesToCommit = [
         "version.txt",
-        "runner-package/package.json",
-        "runner-package/package-lock.json",
+        ...NPM_PACKAGES.flatMap((pkg) => [`${pkg}/package.json`, `${pkg}/package-lock.json`]),
         "example_plugin/src/test/e2e/package-lock.json",
         ...changedSourceFiles,
     ].join(" ");

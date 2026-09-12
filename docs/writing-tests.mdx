@@ -8,7 +8,7 @@ description: "Learn how to write and structure your Plugwright tests."
 Tests use a simple API similar to Jest:
 
 ```typescript
-import { test, expect } from '@drownek/plugwright';
+import { test, expect } from '@plugwright/runner';
 
 test('test description', async ({ player }) => {
   // Your test code here
@@ -17,10 +17,10 @@ test('test description', async ({ player }) => {
 
 ## Your First Test
 
-Create `src/test/e2e/first.spec.ts`:
+Create `src/test/e2e/tests/first.spec.ts` — specs live in `tests`, in whatever subdirectories you like ([Project Layout](/project-layout)):
 
 ```typescript
-import { test, expect } from '@drownek/plugwright';
+import { test, expect } from '@plugwright/runner';
 
 test('player receives welcome message', async ({ player }) => {
   await expect(player).toHaveReceivedMessage('Welcome');
@@ -52,7 +52,7 @@ test('player starts with default balance', async ({ player }) => {
 });
 
 test('player can purchase items', async ({ player, server }) => {
-  server.execute(`eco give ${player.username} 500`);
+  await server.execute(`eco give ${player.username} 500`);
   player.chat('/buy diamond');
   await expect(player).toHaveReceivedMessage('Purchased');
   await expect(player).toContainItem('diamond');
@@ -73,7 +73,7 @@ test('player inventory has starter items', async ({ player }) => {
 
 ```typescript
 test('server executes commands', async ({ player, server }) => {
-  server.execute(`give ${player.username} diamond 64`);
+  await server.execute(`give ${player.username} diamond 64`);
   await expect(player).toContainItem('diamond');
 });
 ```
@@ -112,7 +112,7 @@ await expect(player).toContainItem('item_name')
 The framework provides several exported utilities for advanced waiting and polling:
 
 ```typescript
-import { test, sleep, poll, waitForAssertion, waitUntil, waitForStable } from '@drownek/plugwright';
+import { test, sleep, poll, waitForAssertion, waitUntil, waitForStable } from '@plugwright/runner';
 
 test('advanced waiting', async ({ player }) => {
   // Sleep for 1 second
@@ -123,9 +123,155 @@ test('advanced waiting', async ({ player }) => {
 });
 ```
 
+## Tests that share a player: `describe.serial`
+
+Every test gets its own bot, connected before it starts and disconnected after it ends. That is the right default, and most tests want nothing else.
+
+Some scenarios aren't one test, though. "Claim a kit, see it on cooldown, wait, see it claimable again" is three assertions about the same player in a fixed order, and three independent bots can't express it however you schedule them. `describe.serial` is for exactly that:
+
+```typescript
+import { describe, test, expect, sleep } from '@plugwright/runner';
+
+describe.serial('kit lifecycle', () => {
+  test('claims the starter kit', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('Received starter kit');
+  });
+
+  test('is on cooldown right after', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('cooldown');
+  });
+
+  test('can claim again once the cooldown expires', async ({ player }) => {
+    await sleep(5000);
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('Received starter kit');
+  });
+});
+```
+
+One player, one connection, one leased account for the whole block. The tests run in the order they are written, and the account goes back to the pool when the block ends.
+
+### The block is the unit
+
+Filters apply to the block, not to the tests inside it. If `requires`, `environments`, `tests.names` or `tests.exclude` rules out any test in the block, the whole block is skipped and every test in it is reported skipped with that reason. A chain missing a link is worse than no chain: the steps after it would assert against state that nothing produced.
+
+The same logic covers failure. When a test fails or times out, the rest of its block is reported **skipped**, not failed — those tests never ran, and reporting them as failures would bury the one real cause under a pile of noise. A test can also say so itself:
+
+```typescript
+test('buys the last item in stock', async ({ player, invalidatePlayer }) => {
+  // ...
+  if (theShopIsNowEmpty) invalidatePlayer(player, 'shop stock is spent');
+});
+```
+
+Outside a serial block `invalidatePlayer` does nothing, since the bot is disconnected at the end of the test anyway.
+
+### Hooks inside a block
+
+Plugin `beforeEach`/`afterEach` run **once around the whole block** — before its first test and after its last. A plugin whose job is to reset an account between tests would otherwise undo exactly what the block is built on. Spec-level `beforeEach`/`afterEach` still run for every test, and `describe` nesting works inside a block the way it does anywhere else:
+
+```typescript
+describe.serial('shop lifecycle', () => {
+  beforeEach(async ({ player }) => {
+    // runs before each of the three tests below
+  });
+
+  describe('buying', () => {
+    test('adds the item', async ({ player }) => { /* ... */ });
+    test('takes the money', async ({ player }) => { /* ... */ });
+  });
+});
+```
+
+Each test starts with a clear message buffer, so a message from an earlier step can't satisfy an assertion about this one. What carries over is server state, which is the point.
+
+A block can't contain another `describe.serial` — nesting one ordered chain inside another is a scheduling question the runner deliberately doesn't answer.
+
+### Naming an account
+
+On a stand where one specific account carries the state a scenario needs — a permission group, a starting balance, a whitelist entry — name it:
+
+```typescript
+describe.serial('vip shop', { account: 'pw_0001' }, async () => {
+  // every test in the block runs as pw_0001
+});
+```
+
+The account must exist in the environment's `accounts { }` pool and be free. If it is already leased, or the environment has no pool at all (`LocalMode` invents a name per bot and has none), the block fails with that message rather than quietly running as somebody else.
+
+### A second bot for the block
+
+`ctx.createPlayer()` connects an extra bot that lives as long as the test does. Inside a block, `as` gives it a name so a later test gets the same bot back:
+
+```typescript
+describe.serial('trading', () => {
+  test('sends the payment', async ({ player, createPlayer }) => {
+    const buyer = await createPlayer({ as: 'buyer' });
+    buyer.chat(`/pay ${player.username} 100`);
+    await expect(player).toHaveReceivedMessage('Received $100');
+  });
+
+  test('the buyer is out of money', async ({ createPlayer }) => {
+    const buyer = await createPlayer({ as: 'buyer' }); // the same bot as above
+    buyer.chat('/balance');
+    await expect(buyer).toHaveReceivedMessage('$900');
+  });
+});
+```
+
+## Racing bots against each other: `concurrency`
+
+One bot can't produce a race. Two players opening the same chest at once, three players buying the last item in stock — bugs like that only exist when several bots hit the same feature at the same time, on the same server. `concurrency` runs a test as N independent instances at once, each with its own bot:
+
+```typescript
+test('only one player can claim the chest', { concurrency: 3 }, async ({ player }) => {
+  player.chat('/claim');
+  await expect(player).toHaveReceivedMessage(/Claimed|already claimed/);
+});
+```
+
+Each instance leases its own account and runs the full test body on its own bot. The test only passes if every instance does — one instance losing the race it wasn't supposed to lose is the bug you're trying to catch, not noise to average away.
+
+`describe.serial` blocks take the same option, running N independent copies of the whole ordered chain at once:
+
+```typescript
+describe.serial('kit lifecycle', { concurrency: 5 }, () => {
+  test('claims the starter kit', async ({ player }) => { /* ... */ });
+  test('is on cooldown right after', async ({ player }) => { /* ... */ });
+});
+```
+
+### The report still has one row per test
+
+`concurrency` multiplies how many bots run a test, not how many rows it produces in the summary. That row's duration is the slowest instance, and it carries an `instances` array with every instance's own outcome — bot username, pass or fail, duration — so a failure tells you which bot lost, not just that somebody did.
+
+<Tip>
+**Console and Server Log Assertions under Concurrency:**
+- **Player chat is isolated**: `expect(player).toHaveReceivedMessage(...)` checks that specific bot's private message buffer. It never collides between concurrent instances.
+- **Server console is shared**: `expect(server).toHaveReceivedMessage(...)` inspects the server's single shared log. When multiple bots run concurrently, distinguish log entries by incorporating the bot's unique username:
+  ```typescript
+  test('claims bounty', { concurrency: 3 }, async ({ player, server }) => {
+    player.chat('/bounty claim');
+    // Qualify server log assertions with the player's unique name:
+    await expect(server).toHaveReceivedMessage(new RegExp(`Bounty awarded to ${player.username}`));
+  });
+  ```
+- **Global commands**: Tests asserting on unparameterized global server events (like `/reload` or global broadcasts without player names) should run as standard single tests without the `concurrency` option.
+</Tip>
+
+### How many you can ask for
+
+`concurrency: N` needs N free accounts. On an environment with an account pool, this is checked before any test in the run starts: ask for `concurrency: 10` against a 4-account pool and it fails immediately with a clear error, instead of the 5th bot hanging on a lease nobody's going to release. `LocalMode` has no pool — it mints a throwaway account per bot — so there's nothing to check there; its only real ceiling is the server's own `max-players`.
+
+### The server log is still one shared log
+
+`expect(server)` reads the console output the whole session shares, so one instance's commands sit in that log right next to every other instance's. Nothing filters that for you, and that's deliberate — asserting the server log never produced something no bot should have caused (`expect(server).not.toHaveReceivedMessage('NullPointerException')`) is exactly what a concurrency test is for. If you need one bot's output specifically, either put its username in the pattern or check `expect(player)` instead, since a player's own messages never mix with another bot's.
+
 ## Best Practices
 
-1. **Keep tests isolated** - Each test gets a fresh bot
+1. **Keep tests isolated** - Each test gets a fresh bot unless it is in a `describe.serial` block
 2. **Use descriptive names** - Make test failures easy to understand
 3. **Wait for conditions** - Use assertions that auto-retry
 4. **Test one thing** - Each test should verify one behavior
@@ -134,7 +280,7 @@ test('advanced waiting', async ({ player }) => {
 
 ## Tips
 
-- Tests run sequentially, not in parallel
+- Tests run sequentially by default — a test that needs bots racing each other can opt into `concurrency`
 - Server starts fresh for each test run
 - Bot automatically connects to the server
 - Server logs are visible in the console output

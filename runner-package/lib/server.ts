@@ -1,7 +1,31 @@
-export class ServerWrapper {
-    execute: (cmd: string) => void;
+import type { Session } from './session.js';
 
-    constructor(executeFn: (cmd: string) => void) {
-        this.execute = executeFn;
+export class ServerWrapper {
+    readonly session: Session;
+    /** Default read cursor for `toHaveReceivedMessage` when no `since` is given — the log index
+     *  at construction time, so a fresh test only sees lines from its own start. Non-destructive
+     *  replacement for the old `session.consoleLog.clear()`: the log itself is never wiped, so
+     *  concurrent tests reading it don't race. */
+    startIndex: number;
+
+    constructor(session: Session) {
+        this.session = session;
+        this.startIndex = session.consoleLog.length;
+    }
+
+    /** Moves the default read cursor to "now". Used by a `describe.serial` block between its
+     *  tests, which share one `ServerWrapper` — the block-level equivalent of a fresh one. */
+    resetCursor(): void {
+        this.startIndex = this.session.consoleLog.length;
+    }
+
+    /** Executes a console command and resolves with the server's response. Note: when running under `concurrency: N`,
+     *  console output is shared across all concurrent tests. Prefer player actions or qualify
+     *  commands with `player.username`. */
+    execute(cmd: string, timeoutMs?: number): Promise<string> {
+        if (!this.session.console) {
+            throw new Error('No server console available for this environment');
+        }
+        return this.session.console.execute(cmd, timeoutMs);
     }
 }

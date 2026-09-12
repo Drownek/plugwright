@@ -17,20 +17,25 @@ description: "Start running your first test in less than 5 minutes."
 
     ```kotlin
     plugins {
-        id("io.github.drownek.plugwright") version "2.0.4"
+        id("io.github.drownek.plugwright") version "3.0.0"
     }
 
     plugwright {
-        minecraftVersion.set("1.19.4")
-        testsDir.set(file("src/test/e2e"))
-        acceptEula.set(true)
-
-        // Download some dependencies your plugin might need
-        downloadPlugins {
-            url("https://url.to/plugin1.jar")
-            url("https://url.to/plugin2.jar")
-            // ... etc
+        environments {
+            // Paper downloaded, patched, started and killed by plugwright itself.
+            create("local", LocalMode) {
+                minecraftVersion.set("1.19.4")
+                acceptEula.set(true)
+                // Download some dependencies your plugin might need
+                downloadPlugins {
+                    url("https://url.to/plugin1.jar")
+                    url("https://url.to/plugin2.jar")
+                    // ... etc
+                }
+            }
         }
+
+        testsDir.set(file("src/test/e2e"))
 
         // If true, always downloads and uses an isolated Node.js version, ignoring the system Node.
         downloadNode.set(true)
@@ -40,17 +45,38 @@ description: "Start running your first test in less than 5 minutes."
     <Tip>
       If you already have Node.js installed on your system, you can comment out `downloadNode.set(true)` to speed up initialization. Otherwise, leave it uncommented.
     </Tip>
+
+    If npm at your company goes through a private registry, add an `npm { }` block now — the next step installs packages, and it will need it:
+
+    ```kotlin
+    plugwright {
+        npm {
+            registry("https://nexus.corp/repository/npm-group/") {
+                authToken(secret.env("NPM_TOKEN"))
+            }
+        }
+    }
+    ```
+
+    Plugwright writes that to a gitignored `.npmrc` in the workspace before each install. See [Configuration](/configuration#npm-registries).
   </Step>
 
   <Step title="Initialization">
-    Run the init command to set up your test folder.
-    This will automatically generate your package.json, TypeScript configuration, and an example test in a chosen directory.
-
-    This command is interactive, so simply follow the prompts on your screen:
+    Run the init command to set up your test folder. It asks where to put it, then writes an npm project with a `package.json`, a TypeScript config, a `.gitignore`, an example spec and an example runner plugin:
 
     ```bash
     ./gradlew plugwrightInit
     ```
+
+    ```
+    src/test/e2e/
+      tests/example.spec.ts          your specs go here
+      plugins/example-plugin.ts      hooks, fixtures and matchers
+      package.json, tsconfig.json
+      .gitignore                     node_modules, dist, generated, .npmrc
+    ```
+
+    Everything a run generates — the compiled specs, the server the local environment starts — stays inside that directory, under `dist` and `generated`. See [Project Layout](/project-layout).
   </Step>
 
   <Step title="Your First Test">

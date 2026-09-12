@@ -1,13 +1,15 @@
 {
-  "name": "@drownek/plugwright",
-  "version": "2.0.4",
+  "name": "@plugwright/runner",
+  "version": "3.0.0",
   "description": "End-to-end testing framework for Paper/Spigot Minecraft plugins",
   "type": "module",
   "main": "dist/runner.js",
   "types": "dist/runner.d.ts",
+  "bin": {
+    "plugwright": "dist/cli.js"
+  },
   "scripts": {
     "build": "rimraf dist && tsc",
-    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit"
@@ -36,8 +38,9 @@
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
-    "mineflayer": "^4.38.0",
+    "mineflayer": "^4.39.0",
     "picocolors": "^1.1.1",
+    "prismarine-auth": "^3.1.1",
     "source-map-support": "^0.5.21"
   },
   "devDependencies": {

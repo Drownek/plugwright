@@ -1,0 +1,125 @@
+---
+title: "External Servers"
+description: "Run the same suite against a server Plugwright does not own."
+---
+
+`ExternalMode` points bots at a server that is already running: a staging stand, a colleague's box, the production copy someone keeps for QA. Plugwright starts nothing, patches nothing and shuts nothing down.
+
+That changes what the suite can assume. A local server hands every test a fresh world and a brand new username. A stand hands you whatever the last test left behind, on an account you have to log in as, and the plugin under test is already installed there — deploying it is out of scope for this mode by design.
+
+```kotlin
+import me.drownek.plugwright.api.secret
+import me.drownek.plugwright.external.ExternalMode
+
+environments {
+    create("staging", ExternalMode) {
+        host.set("mc.example.com")
+        port.set(25565)
+        minecraftVersion.set("1.20.4")
+        joinThrottleMs.set(3000)
+        excludeTests.set(listOf("arena", "kit"))
+
+        console {
+            rcon { port.set(25575); password.set(secret.env("RCON_PASSWORD")) }
+        }
+
+        accounts {
+            pool {
+                account("TestBot1") { password.set(secret.env("BOT1_PASSWORD")) }
+                account("TestBot2") { password.set(secret.env("BOT2_PASSWORD")) }
+            }
+            autoRegister {
+                usernamePattern.set("pw_%04d")
+                password.set(secret.env("BOT_PASSWORD"))
+                max.set(4)
+            }
+        }
+
+        plugins {
+            npm("@plugwright/auth-authme")
+        }
+    }
+}
+```
+
+`minecraftVersion` is required here, unlike in `LocalMode` where the version is what Plugwright downloaded. A proxy in front of the stand (ViaVersion and friends) defeats protocol autodetection, so guessing would produce a confusing connection failure instead of a clear one.
+
+`joinThrottleMs` is the minimum delay between two bot connections. Public servers treat a burst of logins as an attack; a few seconds of spacing is cheaper than getting the CI runner's IP banned.
+
+## Console channels
+
+Without a process of its own, the mode has no stdout to read and no stdin to write. A console channel is how tests reach `server.execute(...)`, `player.makeOp()` and everything else that needs the server side.
+
+Channels are probed in declaration order, and the first one that answers becomes the session's console. The chosen channel is printed in the run header.
+
+| Channel | Output level | Notes |
+|---|---|---|
+| `rcon { }` | `responses` | Needs `enable-rcon=true` on the server |
+| `LocalMode` | `full` | Built into LocalMode — commands run via RCON while full server logs are captured directly from stdout |
+
+The output level matters more than it looks. `full` means the whole server log is readable, so `expect(server).toHaveReceivedMessage(...)` works. `responses` means you get back what the command printed and nothing else. A test that reads the server log should say so:
+
+```ts
+test('command is logged', { requires: { consoleOutput: 'full' } }, async ({ server }) => {
+  await server.execute('say hello');
+  await expect(server).toHaveReceivedMessage('hello');
+});
+```
+
+Declaring no channel at all is valid. The environment runs without a console, and every test that requires one is skipped and reported as skipped.
+
+## Accounts
+
+A local server accepts any username; a stand usually does not. `accounts { }` builds a pool that tests lease from and return to, merged from three sources:
+
+- **`pool`** — accounts that already exist, with their passwords.
+- **`autoRegister`** — generated names from a pattern, marked `justCreated` on their first lease so an authentication plugin registers them instead of logging in. The pattern must start with `pw_`, so test accounts stay recognizable on a server full of real players. The placeholder decides what happens to a name afterwards: `pw_%04d` numbers a fixed set of accounts the run keeps coming back to, while `pw_%s` puts a random suffix there and never hands the same name out twice. See below.
+- **`microsoft`** — online-mode accounts. No password; mineflayer authenticates with a cached device-code token. Point `cacheDir` somewhere outside `build/`, and warm the cache before CI ever needs it, because the device-code flow is interactive.
+
+One account is leased per bot and returned in a `finally`, whatever the test did. When the pool is empty and `autoRegister` has hit `max`, `lease()` throws rather than hand the same identity to two connected bots.
+
+An explicitly named bot bypasses the pool entirely:
+
+```ts
+const friend = await createPlayer({ username: 'FriendBot', password: process.env.FRIEND_BOT_PASSWORD });
+```
+
+That is a request for a specific identity, not for whatever is free, so the pool knows nothing about it and neither does your authentication plugin. Pass the password with the name. Read it from the environment; the spec file goes to git.
+
+Most second bots don't need this. A test that just wants another player should call `createPlayer()` with no arguments and let the pool answer — a name is worth asking for when the identity is, because somebody provisioned that account with a permission group or a balance, or because the name came from somewhere outside the test.
+
+<Warning>
+A leased account comes back with the previous test's inventory, balance and op status. Nothing resets it for you. Reset what you can in a plugin's `beforeEach`, and exclude what you can't.
+</Warning>
+
+## Numbered slots or fresh names
+
+`autoRegister` answers a question the fixed `pool` can't: where does a name come from when the server has never seen this test before? Which form you want depends on what the stand can clean up.
+
+`pw_%04d` gives you `pw_0001` … `pw_000N`, leased in turn and returned when a test ends. The set is finite and the accounts are provisioned once, which is what a stand with permission groups or a whitelist needs. The cost is that every test inherits whatever the last one left on that account, so anything you can't reset with a command has to stay out of the suite (`excludeTests`) or be undone in a plugin's `beforeEach`.
+
+`pw_%s` generates a name per lease — `pw_a8f2` — and never reuses it. Each test starts on an account with no history, which is the closest a stand gets to what `local` hands out for free. The cost is a registration the server keeps: after a few runs the login plugin's database is full of test accounts, and pruning them is on you. `max` still caps how many bots are connected at once.
+
+## Naming an account from a test
+
+A `describe.serial` block can ask for one specific pool account:
+
+```ts
+describe.serial('vip shop', { account: 'pw_0001' }, () => {
+  // ...
+});
+```
+
+That's for a scenario tied to state somebody provisioned on that account — a permission group, a starting balance. The account has to be in the pool and free; anything else fails the block instead of quietly running as a different player. See [Writing Tests](/writing-tests).
+
+## Checking the stand before you test
+
+```bash
+./gradlew plugwrightPingStaging
+```
+
+Connects, probes the console channels, leases one account and authenticates with it, then disconnects. No tests run. When something is wrong with the stand — RCON password rotated, login plugin changed its messages, account pool exhausted — this fails in seconds with a specific message instead of failing test after test five minutes into a run.
+
+
+
+After `setup()`, the environment reports what it actually supports. For `ExternalMode` that is: console plus op only if a console channel answered. Tests that declare `requires` are skipped against that list, with the reason in the report. See [Test Filtering](/test-filtering).

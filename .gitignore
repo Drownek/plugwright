@@ -12,8 +12,7 @@ gradle-app.setting
 !gradle-wrapper.jar
 *.class
 gradle.properties
-/gradle-plugin/bin/
-/example_plugin/bin/
+**/bin/
 
 # IDE
 .idea/
@@ -32,6 +31,9 @@ gradle.properties
 Thumbs.db
 desktop.ini
 
+# Code Graph index
+.codegraph/
+
 # Logs
 *.log
 logs/
@@ -40,7 +42,8 @@ logs/
 *.tsbuildinfo
 dist/
 
-# Test server runtime
+# Test server runtime — plugwright writes it under <testsDir>/generated/<environment>
+generated/
 run/
 test-server/
 **/server.properties
@@ -62,9 +65,6 @@ test-server/
 **/spigot.jar
 server.jar
 
-# Compiled test files
-**/e2e/dist/
-
 # Temporary files
 *.tmp
 *.temp
@@ -81,3 +81,9 @@ release.properties
 dependency-reduced-pom.xml
 
 .serena/
+
+# Publishing credentials for a private registry. See .env.example.
+.env
+
+# Local, per-developer notes kept beside the checked-in docs.
+*.local.md

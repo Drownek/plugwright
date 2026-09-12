@@ -3,6 +3,68 @@ title: "API Reference"
 description: "Detailed API documentation for advanced users."
 ---
 
+## Test Runner API
+
+### `test(name, options?, fn)`
+
+Defines an individual test case.
+
+<ParamField path="name" type="string" required>
+  The title/description of the test.
+</ParamField>
+
+<ParamField path="options.concurrency" type="number">
+  Runs N independent instances of the test simultaneously with distinct leased accounts to detect race conditions.
+</ParamField>
+
+<ParamField path="options.requires" type="Partial<EnvironmentCapabilities>">
+  Environment capabilities required for this test to execute.
+</ParamField>
+
+<ParamField path="options.environments" type="string[]">
+  List of environment names where this test is allowed to run.
+</ParamField>
+
+```typescript
+import { test, expect } from '@plugwright/runner';
+
+test('race condition check', { concurrency: 3 }, async ({ player }) => {
+  player.chat('/claim');
+  await expect(player).toHaveReceivedMessage(/Claimed|already claimed/);
+});
+```
+
+### `describe.serial(name, options?, fn)`
+
+Groups tests that execute sequentially while retaining the same player/bot session and leased account across all tests in the block.
+
+<ParamField path="name" type="string" required>
+  The title/description of the serial block.
+</ParamField>
+
+<ParamField path="options.account" type="string">
+  Specific account name to lease from the environment's account pool.
+</ParamField>
+
+<ParamField path="options.concurrency" type="number">
+  Runs N independent copies of the entire ordered serial chain at the same time.
+</ParamField>
+
+```typescript
+import { describe, test, expect } from '@plugwright/runner';
+
+describe.serial('kit lifecycle', () => {
+  test('claim kit', async ({ player }) => {
+    player.chat('/kit starter');
+  });
+
+  test('is on cooldown', async ({ player }) => {
+    player.chat('/kit starter');
+    await expect(player).toHaveReceivedMessage('cooldown');
+  });
+});
+```
+
 ## `player` / `bot` Object
 
 The `player` or `bot` object represents a real Minecraft client connected to the test server.
@@ -31,7 +93,7 @@ Waits for a GUI to open matching the title and returns a live handle.
 
 ```javascript
 const gui = await player.gui({ title: 'Shop' });
-const button = gui.locator(i => i.getDisplayName().includes('Confirm'));
+const button = gui.locator(i => i.displayName.includes('Confirm'));
 ```
 
 ### `player.makeOp()`
@@ -79,6 +141,16 @@ Gives items to the player.
 await player.giveItem('diamond', 64);
 ```
 
+### `player.clearInventory(item?, options?)`
+
+Clears the player's inventory and waits until the client-side inventory state reflects it. If an item name is specified, only that item is cleared.
+
+```javascript
+await player.clearInventory();
+// or clear specific item
+await player.clearInventory('diamond');
+```
+
 ### Properties
 
 <ResponseField name="inventory" type="Inventory">
@@ -104,7 +176,7 @@ Executes a command from the server console.
 </ParamField>
 
 ```javascript
-server.execute(`give ${player.username} diamond 64`);
+await server.execute(`give ${player.username} diamond 64`);
 ```
 
 ## Exported Utilities
@@ -119,6 +191,33 @@ Creates a new, independent player bot that joins the server. Useful for multi-us
 const player2 = await createPlayer();
 player2.chat('/tpa ' + player.username);
 ```
+
+<ParamField path="options.username" type="string">
+  Connect as this exact name instead of taking whatever the environment's account pool has free.
+</ParamField>
+
+<ParamField path="options.as" type="string">
+  Names the bot inside a `describe.serial` block, so a later test in that block gets the same bot
+  back instead of connecting another one.
+</ParamField>
+
+<ParamField path="options.password" type="string">
+  The password an authentication plugin logs `username` in with. Only for a named bot: a pool
+  account already carries its own, and passing both is an error.
+</ParamField>
+
+Ask for a name only when the test needs that specific identity — an account somebody provisioned
+by hand, or a name that came out of an external API. A second bot that is only there to be a
+second player should stay unnamed, so a stand can lease it from the pool.
+
+```javascript
+const friend = await createPlayer({
+    username: 'FriendBot',
+    password: process.env.FRIEND_BOT_PASSWORD,
+});
+```
+
+Read the password from the environment. Spec files go to git.
 
 ### `sleep(ms)`
 
@@ -147,7 +246,7 @@ Repeatedly executes a function until it returns a value that is not `undefined`,
 </ParamField>
 
 ```javascript
-await poll(() => player.inventory.hasItem('diamond'));
+const diamond = await poll(() => player.bot.inventory.items().find(i => i.name === 'diamond'));
 ```
 
 ### `waitForAssertion(fn, options?)`

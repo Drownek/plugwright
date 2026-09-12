@@ -8,7 +8,7 @@ description: "Understand the fundamentals of Plugwright."
 In Plugwright, every test runs with a pre-configured context. You use `test()` to define a scenario and `expect()` to make assertions.
 
 ```javascript
-import { expect, test } from '@drownek/plugwright';
+import { expect, test } from '@plugwright/runner';
 
 test('Basic test', async ({ player }) => {
     // Your test logic here
@@ -27,7 +27,7 @@ test('Click an item in GUI', async ({ player }) => {
     const gui = await player.gui({ title: 'Menu' });
     
     // Find an item by its internal name or display name
-    const shopItem = gui.locator(i => i.getDisplayName().includes('Shop'));
+    const shopItem = gui.locator(i => i.displayName.includes('Shop'));
     await shopItem.click();
     
     await expect(player).toHaveReceivedMessage('You opened the shop!');

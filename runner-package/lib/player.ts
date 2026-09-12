@@ -1,14 +1,21 @@
 import { Bot } from 'mineflayer';
 import { ItemWrapper, GuiWrapper, createPlayerExtensions, Window, LiveGuiHandle } from './wrappers.js';
 import { ServerWrapper } from './server.js';
-import { activeBots, disconnectBot, createBot } from './bot-utils.js';
-import { poll } from './utils.js';
+import type { Session } from './session.js';
+import { MessageBuffer } from './session.js';
+import type { BotConnectionOptions } from './environment.js';
+import type { Account } from './account.js';
+import { poll, waitUntil } from './utils.js';
 import { randomUUID } from 'node:crypto';
 import pc from 'picocolors';
 
 export class PlayerWrapper {
     bot: Bot;
-    public readonly messageBuffer: string[] = [];
+    readonly session: Session;
+    /** This player's own received-chat log. Kept per player, not per session, so one bot's
+     *  chat can't satisfy — or pollute — an assertion made against another bot in the same
+     *  test run. */
+    readonly messageBuffer = new MessageBuffer();
 
     get inventory() {
         return this.bot.inventory;
@@ -18,37 +25,21 @@ export class PlayerWrapper {
         return this.bot.username;
     }
 
-    /**
-     * @deprecated Use `player.gui({ title })` instead.
-     */
-    waitForGui!: (guiMatcher: (gui: GuiWrapper) => boolean, options?: { timeout?: number }) => Promise<GuiWrapper>;
-
-    /**
-     * @deprecated Use `gui.locator(predicate)` with expectations instead.
-     */
-    waitForGuiItem!: (itemMatcher: (item: ItemWrapper) => boolean, options?: { timeout?: number, pollingRate?: number }) => Promise<ItemWrapper>;
-
-    /**
-     * @deprecated Use `gui.locator(predicate).click()` instead.
-     */
-    clickGuiItem!: (itemMatcher: (item: ItemWrapper) => boolean, options?: { timeout?: number, pollingRate?: number }) => Promise<void>;
-
     gui!: (options: { title: string | RegExp; timeout?: number }) => Promise<LiveGuiHandle>;
     private serverWrapper?: ServerWrapper;
-    private _botOptions?: { host: string; port: number; version: string | undefined; auth: 'mojang' | 'microsoft' | 'offline' };
+    private _botOptions?: BotConnectionOptions;
     private _spawnPromise: Promise<void> | null = null;
     private _listenersBot: Bot | null = null;
+    private _account?: Account;
 
-    constructor(bot: Bot) {
+    constructor(bot: Bot, session: Session) {
         this.bot = bot;
+        this.session = session;
         this._bindExtensions(bot);
     }
 
     private _bindExtensions(bot: Bot): void {
         const extensions = createPlayerExtensions(bot);
-        this.waitForGui = extensions.waitForGui.bind(this);
-        this.waitForGuiItem = extensions.waitForGuiItem.bind(this);
-        this.clickGuiItem = extensions.clickGuiItem.bind(this);
         this.gui = extensions.gui.bind(this);
     }
 
@@ -67,19 +58,19 @@ export class PlayerWrapper {
 
             const onSpawn = () => {
                 cleanup();
-                console.log(`${pc.cyan('[Bot]')} ${pc.dim(`${name()} spawned successfully`)}`);
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} Spawned successfully`);
                 resolve();
             };
 
             const onError = (err: Error) => {
                 cleanup();
-                console.log(pc.red(`[Bot] ${name()} connection error: ${err.message}`));
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} ${pc.red(`Connection error: ${err.message}`)}`);
                 reject(err);
             };
 
             const onKicked = (reason: string) => {
                 cleanup();
-                console.log(pc.red(`[Bot] ${name()} kicked: ${reason}`));
+                console.log(`${pc.cyan(`[Bot ${name()}]`)} ${pc.red(`Kicked: ${reason}`)}`);
                 reject(new Error(`Bot ${name()} was kicked: ${reason}`));
             };
 
@@ -105,10 +96,53 @@ export class PlayerWrapper {
             this._captureSpawnPromise(timeout);
         }
 
+        // Listeners go up before the first await: a login wall greets the bot as soon as it
+        // enters the play state, and a prompt that arrives before the message buffer exists
+        // is a prompt no authentication plugin can answer.
+        this._registerPersistentListeners();
+
+        if (this._account) {
+            // Authentication has to happen while the server still holds the player: AuthMe and
+            // friends keep an unauthenticated bot out of the world entirely, so waiting for the
+            // spawn first would wait for something login is the precondition of.
+            await Promise.race([this._spawnPromise, this._waitForLogin(timeout)]);
+            await this.session.onPlayerCreate?.(this, { account: this._account, env: this.session.env });
+        }
+
         await this._spawnPromise;
         this._spawnPromise = null;
+    }
 
-        this._registerPersistentListeners();
+    /** Resolves once the client is in the play state, where chat works and the server's login
+     *  prompt has been delivered. Never rejects on its own — it is raced against the spawn
+     *  promise, which already fails on a kick, an error or a timeout. */
+    private _waitForLogin(timeout: number): Promise<void> {
+        if (this.bot.entity) return Promise.resolve();
+
+        return new Promise<void>((resolve) => {
+            const timer = setTimeout(() => {
+                this.bot.removeListener('login', onLogin);
+                resolve();
+            }, timeout);
+
+            const onLogin = (): void => {
+                clearTimeout(timer);
+                resolve();
+            };
+
+            this.bot.once('login', onLogin);
+        });
+    }
+
+    /** @internal */
+    _setAccount(account: Account): void {
+        this._account = account;
+    }
+
+    /** The account this player connected with. Set for every player the runner creates
+     *  (`createPlayer` always calls `_setAccount`); undefined only if constructed by hand. */
+    get account(): Account | undefined {
+        return this._account;
     }
 
     private _registerPersistentListeners(): void {
@@ -125,20 +159,20 @@ export class PlayerWrapper {
 
         bot.on('message', (jsonMsg: unknown) => {
             const message = String(jsonMsg);
-            console.log(pc.dim(`[Bot ${botUsername()}] Received message: "${message}"`));
+            console.log(`${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.dim(`Received message: "${message}"`)}`);
             this.messageBuffer.push(message);
         });
 
         bot.on('windowOpen', (window: unknown) => {
             if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string; type?: string | number; slots?: unknown[] };
-            console.log(pc.gray(`[DEBUG] [Bot ${botUsername()}] Global windowOpen event - Title: "${win.title}", Type: ${win.type}, SlotCount: ${win.slots?.length}`));
+            console.log(`${pc.gray('[DEBUG]')} ${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.gray(`Global windowOpen event - Title: "${win.title}", Type: ${win.type}, SlotCount: ${win.slots?.length}`)}`);
         });
 
         bot.on('windowClose', (window: unknown) => {
             if (process.env.PLUGWRIGHT_DEBUG !== '1') return;
             const win = window as { title?: string };
-            console.log(pc.gray(`[DEBUG] [Bot ${botUsername()}] windowClose event - Window: ${win?.title || 'unknown'}`));
+            console.log(`${pc.gray('[DEBUG]')} ${pc.cyan(`[Bot ${botUsername()}]`)} ${pc.gray(`windowClose event - Window: ${win?.title || 'unknown'}`)}`);
         });
     }
 
@@ -151,8 +185,28 @@ export class PlayerWrapper {
         return currentWindow ? new GuiWrapper(this.bot, currentWindow as Window) : null;
     }
 
-    chat(message: string): void {
-        console.log(`${pc.cyan('[Bot]')} ${pc.dim(`Chatting: ${message}`)}`);
+    /**
+     * Sends a chat message as this bot.
+     *
+     * `options.secrets` lists values that must not appear in the line this call logs — a
+     * password, a token, anything the caller already holds and knows is sensitive. Each
+     * occurrence of a listed value is replaced in the *logged* copy of `message`; what goes
+     * to the server is untouched.
+     *
+     * The list is the caller's to supply, and an empty one redacts nothing. Guessing which
+     * argument of an arbitrary command is a password would mean this method knowing every
+     * plugin's command shapes, and a guess that misses fails open — it prints the secret. The
+     * caller is the only one who knows, so the caller says so.
+     */
+    chat(message: string, options: { secrets?: string[] } = {}): void {
+        const { secrets = [] } = options;
+        const logged = secrets.reduce(
+            (text, secret) => (secret ? text.split(secret).join('[REDACTED]') : text),
+            message,
+        );
+        const name = this.bot?.username ?? this.username;
+        const tag = name ? `[Bot ${name}]` : '[Bot]';
+        console.log(`${pc.cyan(tag)} ${pc.dim(`Chatting: ${logged}`)}`);
         this.bot.chat(message);
     }
 
@@ -160,7 +214,7 @@ export class PlayerWrapper {
      * Clears the received message history for this player.
      */
     clearMessages(): void {
-        this.messageBuffer.length = 0;
+        this.messageBuffer.clear();
     }
 
     getMessageBufferIndex(): number {
@@ -187,22 +241,23 @@ export class PlayerWrapper {
 
     async makeOp(): Promise<void> {
         this.requireServer();
-        this.serverWrapper!.execute(`minecraft:op ${this.username}`);
-
-        await poll(
-            () => this.messageBuffer.find(m => m.includes(`Made ${this.username} a server operator`)),
-            { message: `Player ${this.username} was not opped` }
-        );
+        const response = await this.serverWrapper!.execute(`minecraft:op ${this.username}`);
+        if (!/operator/i.test(response) && !/nothing changed/i.test(response)) {
+            throw new Error(`Player ${this.username} was not opped: ${response.trim() || 'no response from the console'}`);
+        }
     }
 
     async deOp(): Promise<void> {
-        await this.executeAndSync(`minecraft:deop ${this.username}`);
+        this.requireServer();
+        await this.serverWrapper!.execute(`minecraft:deop ${this.username}`);
     }
 
     async setGameMode(mode: 'survival' | 'creative' | 'adventure' | 'spectator'): Promise<void> {
-        if (this.bot.game.gameMode === mode) return;
+        if (this.bot.game.gameMode === mode) {
+            return;
+        }
         this.requireServer();
-        this.serverWrapper!.execute(`minecraft:gamemode ${mode} ${this.username}`);
+        await this.serverWrapper!.execute(`minecraft:gamemode ${mode} ${this.username}`);
 
         await poll(
             () => this.bot.game.gameMode === mode ? true : undefined,
@@ -212,11 +267,12 @@ export class PlayerWrapper {
 
     async teleport(x: number, y: number, z: number): Promise<void> {
         this.requireServer();
-        this.serverWrapper!.execute(`minecraft:tp ${this.username} ${x} ${y} ${z}`);
+        await this.serverWrapper!.execute(`minecraft:tp ${this.username} ${x} ${y} ${z}`);
 
         await poll(
             () => {
-                const pos = this.bot.entity.position;
+                const pos = this.bot.entity?.position;
+                if (!pos) return undefined;
                 const close =
                     Math.abs(pos.x - x) < 1 &&
                     Math.abs(pos.y - y) < 1 &&
@@ -228,7 +284,7 @@ export class PlayerWrapper {
     }
 
     /** @internal */
-    _setBotOptions(opts: { host: string; port: number; version: string | undefined; auth: 'mojang' | 'microsoft' | 'offline' }): void {
+    _setBotOptions(opts: BotConnectionOptions): void {
         this._botOptions = opts;
     }
 
@@ -245,17 +301,12 @@ export class PlayerWrapper {
         const botUsername = this.username;
         const oldBot = this.bot;
 
-        await disconnectBot(oldBot, botUsername);
+        await this.session.disconnectBot(oldBot, botUsername);
+        this.session.removeBot(oldBot);
 
-        const idx = activeBots.indexOf(oldBot);
-        if (idx !== -1) activeBots.splice(idx, 1);
-
-        const newBot = createBot({
-            host: this._botOptions.host,
-            port: this._botOptions.port,
+        const newBot = this.session.createBot({
+            ...this._botOptions,
             username: botUsername,
-            version: this._botOptions.version,
-            auth: this._botOptions.auth,
         });
 
         this.bot = newBot;
@@ -267,15 +318,14 @@ export class PlayerWrapper {
         try {
             await this.join(options);
         } catch (err) {
-            const idx = activeBots.indexOf(this.bot);
-            if (idx !== -1) activeBots.splice(idx, 1);
+            this.session.removeBot(this.bot);
             throw err;
         }
     }
 
     async giveItem(item: string, count: number = 1): Promise<void> {
         this.requireServer();
-        this.serverWrapper!.execute(`minecraft:give ${this.username} ${item} ${count}`);
+        await this.serverWrapper!.execute(`minecraft:give ${this.username} ${item} ${count}`);
 
         await poll(
             () => {
@@ -288,21 +338,45 @@ export class PlayerWrapper {
         );
     }
 
+    /**
+     * Clears the player's inventory using `minecraft:clear` and waits until the
+     * bot's client-side inventory reflects the empty state.
+     *
+     * If `item` is provided, clears only items matching that name.
+     */
+    async clearInventory(
+        itemOrOptions?: string | { timeout?: number },
+        options: { timeout?: number } = {}
+    ): Promise<void> {
+        this.requireServer();
+        const item = typeof itemOrOptions === 'string' ? itemOrOptions : undefined;
+        const opts = typeof itemOrOptions === 'object' ? itemOrOptions : options;
+        const timeout = opts.timeout ?? 5000;
+
+        if (item) {
+            await this.serverWrapper!.execute(`minecraft:clear ${this.username} ${item}`);
+            await waitUntil(
+                () => !this.bot.inventory.items().some(i => i.name.includes(item)),
+                {
+                    message: `Inventory item "${item}" for ${this.username} was not cleared`,
+                    timeout,
+                }
+            );
+        } else {
+            await this.serverWrapper!.execute(`minecraft:clear ${this.username}`);
+            await waitUntil(
+                () => this.bot.inventory.items().length === 0,
+                {
+                    message: `Inventory for ${this.username} was not cleared`,
+                    timeout,
+                }
+            );
+        }
+    }
+
     private requireServer(): void {
         if (!this.serverWrapper) {
             throw new Error('ServerWrapper not set on PlayerWrapper');
         }
-    }
-
-    private async executeAndSync(cmd: string): Promise<void> {
-        this.requireServer();
-        const syncId = `sync_${randomUUID().split('-')[0]}`;
-        this.serverWrapper!.execute(cmd);
-        this.serverWrapper!.execute(`minecraft:say ${syncId}`);
-
-        await poll(
-            () => this.messageBuffer.find(m => m.includes(syncId)),
-            { message: `Server command sync timed out for: ${cmd}` }
-        );
     }
 }

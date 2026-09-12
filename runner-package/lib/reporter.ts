@@ -1,3 +1,5 @@
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
 import pc from 'picocolors';
 import { extractSpecLocation } from './stack-trace.js';
 import type { TestResult } from './types.js';
@@ -8,25 +10,43 @@ export function formatDuration(ms: number): string {
     return `${seconds.toFixed(1)}s`;
 }
 
+function statusOf(result: TestResult): 'PASS' | 'FAIL' | 'SKIP' {
+    if (result.skipped) return 'SKIP';
+    return result.passed ? 'PASS' : 'FAIL';
+}
+
+/** min/avg/max duration across a `concurrency > 1` result's instances. */
+function instanceStats(instances: NonNullable<TestResult['instances']>): { min: number; avg: number; max: number } {
+    const durations = instances.map(i => i.durationMs);
+    return {
+        min: Math.min(...durations),
+        avg: Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length),
+        max: Math.max(...durations),
+    };
+}
+
 export function printTestSummary(testResults: TestResult[]): number {
     console.log(`\n${pc.bold("=".repeat(40))}`);
     console.log(pc.bold('  Test Summary'));
     console.log(pc.bold("=".repeat(40)));
 
-    const passed = testResults.filter(r => r.passed);
-    const failed = testResults.filter(r => !r.passed);
+    const skipped = testResults.filter(r => r.skipped);
+    const executed = testResults.filter(r => !r.skipped);
+    const passed = executed.filter(r => r.passed);
+    const failed = executed.filter(r => !r.passed);
     const totalDuration = testResults.reduce((sum, r) => sum + r.durationMs, 0);
 
     console.log(`  Total:    ${pc.bold(String(testResults.length))}`);
     console.log(`  Passed:   ${pc.green(pc.bold(String(passed.length)))}`);
     console.log(`  Failed:   ${failed.length > 0 ? pc.red(pc.bold(String(failed.length))) : pc.dim(String(failed.length))}`);
+    console.log(`  Skipped:  ${skipped.length > 0 ? pc.yellow(pc.bold(String(skipped.length))) : pc.dim(String(skipped.length))}`);
     console.log(`  Duration: ${pc.dim(formatDuration(totalDuration))}`);
 
     const statusCol = 'Status';
     const testCol = 'Test';
     const durationCol = 'Duration';
 
-    const statusWidth = Math.max(statusCol.length, ...(testResults.map(r => r.passed ? 'PASS' : 'FAIL').map(s => s.length)));
+    const statusWidth = Math.max(statusCol.length, ...testResults.map(r => statusOf(r).length));
     const durationWidth = Math.max(durationCol.length, ...testResults.map(r => formatDuration(r.durationMs).length));
     const testWidth = Math.max(testCol.length, ...testResults.map(r => r.testName.length));
 
@@ -37,17 +57,32 @@ export function printTestSummary(testResults: TestResult[]): number {
     console.log(separator);
 
     for (const result of testResults) {
-        const status = result.passed ? 'PASS' : 'FAIL';
+        const status = statusOf(result);
         const statusPadded = status.padEnd(statusWidth);
-        const coloredStatus = result.passed
+        const coloredStatus = status === 'PASS'
             ? pc.green(pc.bold(statusPadded))
-            : pc.red(pc.bold(statusPadded));
+            : status === 'SKIP'
+                ? pc.yellow(pc.bold(statusPadded))
+                : pc.red(pc.bold(statusPadded));
         const duration = formatDuration(result.durationMs);
-        console.log(`  ${coloredStatus}  ${result.testName.padEnd(testWidth)}  ${pc.dim(duration.padStart(durationWidth))}`);
+        // A concurrent test/block's row is one aggregate over N instances — say how many
+        // passed right in the table, not just in the failed-tests detail below.
+        const instanceTag = result.instances
+            ? pc.dim(` [${result.instances.filter(i => i.passed).length}/${result.instances.length}]`)
+            : '';
+        console.log(`  ${coloredStatus}  ${result.testName.padEnd(testWidth)}  ${pc.dim(duration.padStart(durationWidth))}${instanceTag}`);
     }
 
     console.log(separator);
     console.log(`  ${''.padEnd(statusWidth)}  ${pc.bold('Total'.padEnd(testWidth))}  ${pc.dim(formatDuration(totalDuration).padStart(durationWidth))}`);
+
+    if (skipped.length > 0) {
+        console.log(`\n${pc.yellow(pc.bold('Skipped Tests:'))}\n`);
+        for (const result of skipped) {
+            console.log(`  ${pc.yellow(`- ${result.testName}`)}`);
+            if (result.skipReason) console.log(`    ${pc.dim(result.skipReason)}`);
+        }
+    }
 
     if (failed.length > 0) {
         console.log(`\n${pc.red(pc.bold('Failed Tests:'))}\n`);
@@ -63,6 +98,18 @@ export function printTestSummary(testResults: TestResult[]): number {
                 }
             }
 
+            if (result.instances) {
+                const { min, avg, max } = instanceStats(result.instances);
+                console.log(`    ${pc.dim(`${result.instances.length} instances: min ${formatDuration(min)} / avg ${formatDuration(avg)} / max ${formatDuration(max)}`)}`);
+                for (const instance of result.instances) {
+                    const tag = `[${instance.index}/${result.instances.length}]`;
+                    const label = instance.botUsername ?? '?';
+                    const status = instance.passed ? pc.green('OK') : pc.red('FAIL');
+                    const detail = instance.error ? pc.red(` ${instance.error.message}`) : '';
+                    console.log(`      ${pc.dim(`- ${tag} ${label}:`)} ${status} ${pc.dim(`(${formatDuration(instance.durationMs)})`)}${detail}`);
+                }
+            }
+
             console.log('');
         }
 
@@ -71,4 +118,88 @@ export function printTestSummary(testResults: TestResult[]): number {
         console.log(`\n${pc.green(pc.bold('All tests passed!'))}`);
         return 0;
     }
+}
+
+function xmlEscape(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/** Writes the machine-readable report a matrix run aggregates across environments. */
+export function writeJsonReport(path: string, environmentName: string, testResults: TestResult[]): void {
+    const skipped = testResults.filter(r => r.skipped);
+    const executed = testResults.filter(r => !r.skipped);
+    const passed = executed.filter(r => r.passed);
+    const failed = executed.filter(r => !r.passed);
+    const durationMs = testResults.reduce((sum, r) => sum + r.durationMs, 0);
+
+    const report = {
+        environment: environmentName,
+        summary: {
+            total: testResults.length,
+            passed: passed.length,
+            failed: failed.length,
+            skipped: skipped.length,
+            durationMs,
+        },
+        tests: testResults.map(r => ({
+            file: r.file,
+            name: r.testName,
+            status: statusOf(r).toLowerCase(),
+            durationMs: r.durationMs,
+            error: r.error ? r.error.message : null,
+            skipReason: r.skipReason ?? null,
+            plugin: r.plugin ?? null,
+            botUsername: r.botUsername ?? null,
+            // Present when this row aggregates a `concurrency > 1` test/block: every instance's
+            // own outcome, so a failure names which bot lost the race instead of just that one did.
+            instances: r.instances
+                ? r.instances.map(i => ({
+                    index: i.index,
+                    botUsername: i.botUsername ?? null,
+                    passed: i.passed,
+                    durationMs: i.durationMs,
+                    error: i.error ? i.error.message : null,
+                }))
+                : null,
+        })),
+    };
+
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify(report, null, 2), 'utf8');
+}
+
+/** Writes a JUnit XML report: `testsuite name="plugwright.<env>"`, one `testcase` per test,
+ *  spec file as `classname`, full `describe`-chain name as `name`. */
+export function writeJUnitReport(path: string, environmentName: string, testResults: TestResult[]): void {
+    const skipped = testResults.filter(r => r.skipped).length;
+    const failed = testResults.filter(r => !r.skipped && !r.passed).length;
+    const totalTimeSeconds = (testResults.reduce((sum, r) => sum + r.durationMs, 0) / 1000).toFixed(3);
+
+    const cases = testResults.map(r => {
+        const timeSeconds = (r.durationMs / 1000).toFixed(3);
+        const classname = xmlEscape(r.file);
+        const name = xmlEscape(r.testName);
+        const pluginAttr = r.plugin ? ` plugin="${xmlEscape(r.plugin)}"` : '';
+        const inner = r.skipped
+            ? `\n    <skipped message="${xmlEscape(r.skipReason ?? 'skipped')}"/>\n  `
+            : !r.passed
+                ? `\n    <failure message="${xmlEscape(r.error?.message ?? 'failed')}">${xmlEscape(r.error?.stack ?? r.error?.message ?? '')}</failure>\n  `
+                : '';
+        return `  <testcase classname="${classname}" name="${name}" time="${timeSeconds}"${pluginAttr}>${inner}</testcase>`;
+    });
+
+    const xml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        `<testsuite name="plugwright.${xmlEscape(environmentName)}" tests="${testResults.length}" failures="${failed}" skipped="${skipped}" time="${totalTimeSeconds}">`,
+        ...cases,
+        '</testsuite>',
+        '',
+    ].join('\n');
+
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, xml, 'utf8');
 }

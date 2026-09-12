@@ -4,7 +4,8 @@
     "build": "rimraf dist && tsc"
   },
   "dependencies": {
-    "@drownek/plugwright": "file:../../../../runner-package"
+    "@plugwright/runner": "file:../../../../runner-package",
+    "@plugwright/auth-authme": "file:../../../../auth-authme-package"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

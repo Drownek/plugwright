@@ -1,66 +1,82 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { readdir } from 'fs/promises';
 import { join, basename } from 'path';
 import { pathToFileURL } from 'url';
-import { randomUUID } from 'node:crypto';
 import { install as installSourceMapSupport } from 'source-map-support';
 import pc from 'picocolors';
 import { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator } from './lib/wrappers.js';
+import { testRegistry, resetRegistry } from './lib/test-registry.js';
+import { Session } from './lib/session.js';
+import { PluginHost } from './lib/plugin-host.js';
+import { runSerialBlock, runTestCase, runConcurrentSerialBlock, runConcurrentTestCase } from './lib/test-runner.js';
+import { skipReasonForOptions } from './lib/skip-reason.js';
+import { LocalEnvironment } from './lib/environments/local.js';
+import { externalEnvironment } from './lib/environments/external.js';
 import { PlayerWrapper } from './lib/player.js';
-import { ServerWrapper } from './lib/server.js';
-import { testRegistry, scopeStack } from './lib/test-registry.js';
-import { serverConsoleBuffer, createBot, disconnectAllBots, writeMcOutput } from './lib/bot-utils.js';
-import { formatDuration, printTestSummary } from './lib/reporter.js';
+import { printTestSummary, writeJsonReport, writeJUnitReport } from './lib/reporter.js';
+import { loadRunnerConfig } from './lib/config.js';
+import { importOptionalPackage } from './lib/utils.js';
+import type { Environment } from './lib/environment.js';
+import type { EnvironmentConfig, LocalEnvironmentConfig, RunnerConfig } from './lib/config.js';
+import type { ExternalEnvironmentConfig } from './lib/environments/external.js';
 import type { TestResult } from './lib/types.js';
+import type { SerialBlock, TestCase, RegistryItem } from './lib/test-registry.js';
+import type { Account, AccountPool } from './lib/account.js';
 
 // Enable source map support for accurate TypeScript stack traces
 installSourceMapSupport();
 
 // Re-export public API
 export { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator };
-export { PlayerWrapper } from './lib/player.js';
+export { PlayerWrapper };
 export { ServerWrapper } from './lib/server.js';
-export { test, opTest, describe, beforeEach, afterEach } from './lib/test-registry.js';
+export { test, describe, beforeEach, afterEach } from './lib/test-registry.js';
+export type { TestOptions, TestCase, SerialOptions, SerialBlock, RequiresMap } from './lib/test-registry.js';
 export { expect } from './lib/matchers.js';
-export type { TestContext } from './lib/types.js';
+export { loadRunnerConfig, resolveSecret, isSecretRef } from './lib/config.js';
+export type { RunnerConfig, EnvironmentConfig, TestsConfig, LocalEnvironmentConfig, SecretRef, PluginConfig } from './lib/config.js';
+export type { TestContext, TestResult } from './lib/types.js';
+export type { Environment, EnvironmentCapabilities, BotConnectionOptions } from './lib/environment.js';
+export type { ServerConsole } from './lib/console.js';
+export { Session } from './lib/session.js';
+export { PluginHost } from './lib/plugin-host.js';
+export { definePlugin, PLUGIN_API_VERSION } from './lib/plugin.js';
+export type { PlugwrightPlugin, SessionContext, CleanupContext, PluginTestRef, MatcherFn } from './lib/plugin.js';
+export { AccountPool } from './lib/account.js';
+export type { Account, AccountsConfig } from './lib/account.js';
+export { externalEnvironment };
+export type { ExternalEnvironmentConfig, ExternalConsoleChannelConfig } from './lib/environments/external.js';
+export { rconConsole, RconConnection } from './lib/rcon/index.js';
+export type { RconConsoleConfig } from './lib/rcon/index.js';
 
-async function waitForServerStart(serverProcess: ChildProcessWithoutNullStreams): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('Server failed to start within 120 seconds'));
-        }, 120000);
-
-        const dataHandler = (data: Buffer): void => {
-            const output = data.toString();
-            writeMcOutput(data);
-
-            if (output.includes('Done (')) {
-                clearTimeout(timeout);
-                serverProcess.stdout.removeListener('data', dataHandler);
-                serverProcess.stderr.removeListener('data', stderrHandler);
-                setTimeout(resolve, 3000);
-            }
-        };
-
-        const stderrHandler = (data: Buffer): void => {
-            writeMcOutput(data);
-        };
-
-        serverProcess.stdout.on('data', dataHandler);
-        serverProcess.stderr.on('data', stderrHandler);
-
-        serverProcess.on('error', (err: Error) => {
-            clearTimeout(timeout);
-            reject(new Error(`Failed to start server: ${err.message}`));
-        });
-
-        serverProcess.on('exit', (code: number | null) => {
-            if (code !== null && code !== 0) {
-                clearTimeout(timeout);
-                reject(new Error(`Server exited with code ${code} before becoming ready`));
-            }
-        });
-    });
+/**
+ * `local` and `external` are built into this package; anything else is a third-party mode,
+ * loaded through the `runtime` reference the Gradle plugin wrote into the config.
+ */
+async function resolveEnvironment(cfg: EnvironmentConfig): Promise<Environment> {
+    if (cfg.mode === 'local') {
+        return new LocalEnvironment(cfg.config as unknown as LocalEnvironmentConfig);
+    }
+    if (cfg.mode === 'external') {
+        return externalEnvironment(cfg.config as unknown as ExternalEnvironmentConfig);
+    }
+    if (cfg.runtime) {
+        let mod: any;
+        try {
+            mod = await importOptionalPackage(cfg.runtime.package);
+        } catch (error) {
+            throw new Error(
+                `Environment "${cfg.name}" needs package "${cfg.runtime.package}", which failed to load: ` +
+                `${(error as Error).message}`
+            );
+        }
+        const exportName = cfg.runtime.export ?? 'default';
+        const factory = mod[exportName];
+        if (typeof factory !== 'function') {
+            throw new Error(`Package "${cfg.runtime.package}" has no export "${exportName}" for environment "${cfg.name}"`);
+        }
+        return factory(cfg.config) as Environment;
+    }
+    throw new Error(`Environment "${cfg.name}" uses mode "${cfg.mode}", which this runner cannot run yet.`);
 }
 
 async function findSpecFiles(dir: string): Promise<string[]> {
@@ -75,241 +91,220 @@ async function findSpecFiles(dir: string): Promise<string[]> {
     return results;
 }
 
-export async function runTestSession(): Promise<void> {
-    const serverJar = process.env.SERVER_JAR;
-    const serverDir = process.env.SERVER_DIR;
-    const javaPath = process.env.JAVA_PATH;
-    const testFileFilter = process.env.TEST_FILES;
-    const testNameFilter = process.env.TEST_NAMES;
+export async function runTestSession(config: RunnerConfig = loadRunnerConfig()): Promise<void> {
+    const testFileFilters = config.tests.include ?? null;
+    const testNameFilters = config.tests.names ?? null;
+    const testNameExcludes = config.tests.exclude ?? null;
+    const timeoutMs = config.tests.timeoutMs
+        ?? (process.env.TEST_TIMEOUT ? parseInt(process.env.TEST_TIMEOUT, 10) : 30000);
     const testResults: TestResult[] = [];
 
-    if (!serverJar || !serverDir || !javaPath) {
-        throw new Error('SERVER_JAR, JAVA_PATH and SERVER_DIR environment variables must be set');
-    }
+    const env = await resolveEnvironment(config.environment);
+    const session = new Session(env);
+    const plugins = new PluginHost();
+    await plugins.load(config.plugins ?? []);
+    // Must happen before the first spec file is imported — see PluginHost.registerMatchers.
+    plugins.registerMatchers();
+    // Wired before env.setup(): an environment's own console channel can be a bot that needs
+    // to authenticate during setup(), which goes through this same hook.
+    session.onPlayerCreate = (player, ctx) => plugins.onPlayerCreate(player, ctx);
 
     let exitCode = 0;
 
-    console.log(`${pc.bold('Starting Paper server...')}`);
-
-    const jvmArgsString = process.env.JVM_ARGS || '';
-    const jvmArgs = jvmArgsString.split(' ').filter(arg => arg.trim() !== '');
-
-    console.log(pc.dim(`JVM Arguments: ${jvmArgs.join(' ')}`));
-
-    const serverProcess = spawn(javaPath!, [...jvmArgs, '-jar', serverJar, '--nogui'], {
-        cwd: serverDir,
-        stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    // Ensure the Paper server dies if our runner is killed (e.g. Gradle task
-    // cancelled from the IDE). Otherwise the java.exe keeps running and holds
-    // run/logs/latest.log open, breaking the next plugwrightClean on Windows.
-    const killServerTree = (): void => {
-        if (!serverProcess.pid || serverProcess.killed || serverProcess.exitCode !== null) return;
-        try {
-            if (process.platform === 'win32') {
-                // taskkill recursively kills the whole java process tree.
-                spawn('taskkill', ['/F', '/T', '/PID', String(serverProcess.pid)], {
-                    stdio: 'ignore',
-                    windowsHide: true,
-                }).on('error', () => { /* best effort */ });
-            } else {
-                serverProcess.kill('SIGKILL');
-            }
-        } catch {
-            /* best effort */
-        }
-    };
-
-    let cleanupStarted = false;
-    const emergencyShutdown = (signal: string): void => {
-        if (cleanupStarted) return;
-        cleanupStarted = true;
-        console.log(pc.yellow(`\n[runner] Received ${signal}, killing Paper server...`));
-        killServerTree();
-        // Give taskkill a moment, then exit.
-        setTimeout(() => process.exit(1), 500).unref();
-    };
-
-    process.on('SIGINT', () => emergencyShutdown('SIGINT'));
-    process.on('SIGTERM', () => emergencyShutdown('SIGTERM'));
-    process.on('SIGHUP', () => emergencyShutdown('SIGHUP'));
-    if (process.platform === 'win32') {
-        process.on('SIGBREAK', () => emergencyShutdown('SIGBREAK'));
-    }
-    // Last-resort safety net: if this node process exits for any reason while
-    // the server is still alive, try to take it down with us.
-    process.on('exit', () => killServerTree());
-    // On Windows, when the parent (Gradle) is killed abruptly, signals are not
-    // delivered but our stdin pipe closes. Use that as a death signal.
-    if (process.stdin && typeof process.stdin.on === 'function') {
-        process.stdin.on('close', () => emergencyShutdown('stdin-close'));
-        process.stdin.on('end', () => emergencyShutdown('stdin-end'));
-        // stdin must be resumed for 'end'/'close' to fire on a piped stdin.
-        try { process.stdin.resume(); } catch { /* ignore */ }
-    }
-
     try {
-        await waitForServerStart(serverProcess);
-        console.log(`${pc.green(pc.bold('Server started successfully'))}\n`);
+        await env.setup(session);
+        session.refreshConsole();
+        await plugins.setup(session);
 
-        serverProcess.stdout.on('data', writeMcOutput);
-        serverProcess.stderr.on('data', writeMcOutput);
+        const connOpts = env.connection();
 
-        let testFiles = await findSpecFiles(process.cwd());
-        if (testFileFilter) {
-            const patterns = testFileFilter.split(',').map(p => p.trim());
+        /** Why a test should not run, or null to run it. Checked in order: name exclude,
+         *  name filter, declared `environments`, declared `requires`. A skip always lands
+         *  in the report with its reason — a silent skip on an external stand would look
+         *  like coverage that isn't really there. */
+        function skipReasonFor(testCase: TestCase): string | null {
+            if (testNameExcludes?.some(pattern => testCase.name.includes(pattern))) {
+                return `excluded by tests.exclude (matches "${testNameExcludes.join(',')}")`;
+            }
+            if (testNameFilters && !testNameFilters.some(pattern => testCase.name.includes(pattern))) {
+                return `filtered out by tests.names (${testNameFilters.join(',')})`;
+            }
+            return skipReasonForOptions(env, config.environment.name, testCase.requires, testCase.environments);
+        }
+
+        /** Why a whole `describe.serial` block should not run. The block's own `requires` /
+         *  `environments` come first, then the tests inside it: a filter that takes out one step
+         *  of a chain leaves the rest asserting against state nothing produced, so it takes out
+         *  the block instead. */
+        function blockSkipReason(block: SerialBlock): string | null {
+            const own = skipReasonForOptions(env, config.environment.name, block.requires, block.environments);
+            if (own) return own;
+            for (const testCase of block.tests) {
+                const reason = skipReasonFor(testCase);
+                if (reason) return `"${testCase.name}" ${reason}, and a serial block runs whole or not at all`;
+            }
+            return null;
+        }
+
+        /** One imported spec file's registered tests, snapshotted right after import so its
+         *  concurrency values can be validated before any file's tests run — re-importing later
+         *  to re-check wouldn't work anyway: ESM caches the module, so a second `import()` of
+         *  the same file wouldn't re-run its top-level `test()`/`describe()` calls. */
+        interface LoadedFile {
+            file: string;
+            pluginName: string | null;
+            items: RegistryItem[];
+        }
+
+        async function loadFile(file: string, pluginName: string | null): Promise<LoadedFile> {
+            resetRegistry();
+            await import(pathToFileURL(file).href);
+            return { file, pluginName, items: [...testRegistry] };
+        }
+
+        /** Fails fast, before any test in the session runs, on a `concurrency` the account pool
+         *  here can't satisfy — rather than the test itself blocking on its Nth `pool.lease()`. An
+         *  environment with no pool (e.g. `LocalMode`) mints a synthetic throwaway account per
+         *  connection instead of leasing one, so there's no pool capacity to check against; its
+         *  ceiling is the server's own `max-players`, which is on the operator, not this check. */
+        function validateConcurrency(loaded: LoadedFile[]): void {
+            const pool = env.accounts?.() ?? null;
+            if (!pool) return;
+            const capacity = pool.capacity();
+
+            for (const { file, items } of loaded) {
+                for (const item of items) {
+                    const [kind, name, concurrency] = item.kind === 'serial'
+                        ? ['describe.serial', item.block.name, item.block.concurrency] as const
+                        : ['test', item.testCase.name, item.testCase.concurrency] as const;
+                    if (concurrency <= 1) continue;
+                    if (concurrency > capacity) {
+                        throw new Error(
+                            `${kind} "${name}" (${file}) declares concurrency: ${concurrency}, exceeding the ` +
+                            `account pool's capacity (${capacity}). Reduce concurrency or grow the pool.`
+                        );
+                    }
+                }
+            }
+        }
+
+        /** Runs everything one loaded file registered, appending results to `testResults`.
+         *  Shared by user specs and every plugin-inherited test file. */
+        async function runLoadedFile(loaded: LoadedFile): Promise<void> {
+            const { file, pluginName, items } = loaded;
+
+            for (const item of items) {
+                if (item.kind === 'serial') {
+                    const { block } = item;
+                    const skipReason = blockSkipReason(block);
+                    if (skipReason) {
+                        console.log(pc.dim(`  Serial block: ${block.name} - SKIPPED (${skipReason})`));
+                        for (const testCase of block.tests) {
+                            testResults.push({ file, testName: testCase.name, passed: true, durationMs: 0, skipped: true, skipReason, plugin: pluginName });
+                        }
+                        continue;
+                    }
+
+                    const results = block.concurrency > 1
+                        ? await runConcurrentSerialBlock({ file, block, session, plugins, connOpts, timeoutMs, pluginName, concurrency: block.concurrency })
+                        : await runSerialBlock({ file, block, session, plugins, connOpts, timeoutMs, pluginName });
+                    testResults.push(...results);
+                    continue;
+                }
+
+                const { testCase } = item;
+                const skipReason = skipReasonFor(testCase);
+                if (skipReason) {
+                    console.log(pc.dim(`  Test: ${testCase.name} - SKIPPED (${skipReason})`));
+                    testResults.push({ file, testName: testCase.name, passed: true, durationMs: 0, skipped: true, skipReason, plugin: pluginName });
+                    continue;
+                }
+
+                const result = testCase.concurrency > 1
+                    ? await runConcurrentTestCase({ file, testCase, session, plugins, connOpts, timeoutMs, pluginName, concurrency: testCase.concurrency })
+                    : await runTestCase({ file, testCase, session, plugins, connOpts, timeoutMs, pluginName });
+                testResults.push(result);
+            }
+        }
+
+        const preflightEntries = [...plugins.testFiles('preflight')];
+        const loadedPreflight: LoadedFile[] = [];
+        for (const { file, pluginName } of preflightEntries) loadedPreflight.push(await loadFile(file, pluginName));
+
+        // Preflight files are loaded and validated on their own, before any main/suite spec
+        // file is imported — importing those here would run their top-level code ahead of
+        // preflight, against whatever state preflight was going to set up during execution.
+        validateConcurrency(loadedPreflight);
+
+        // Preflight: plugin auth/setup tests, run before anything else. A failure aborts the
+        // whole session.
+        for (const loaded of loadedPreflight) {
+            console.log(`\n${pc.blue(pc.bold(`Running preflight tests from: ${loaded.file} ${pc.dim(`(plugin ${loaded.pluginName})`)}`))}`);
+            const before = testResults.length;
+            await runLoadedFile(loaded);
+            const failed = testResults.slice(before).find(r => !r.skipped && !r.passed);
+            if (failed) {
+                throw new Error(`Preflight test "${failed.testName}" failed (plugin ${loaded.pluginName}): ${failed.error?.message ?? 'unknown error'}`);
+            }
+        }
+
+        let testFiles = await findSpecFiles(config.tests.dir || process.cwd());
+        if (testFileFilters) {
+            const patterns = testFileFilters;
             console.log(`${pc.dim(`Filtering test files with patterns: ${JSON.stringify(patterns)}`)}\n`);
             testFiles = testFiles.filter(file =>
                 patterns.some(pattern => {
                     const fileName = basename(file).replace(/\.spec\.js$/, '');
-                    const matches = fileName.includes(pattern) || file.includes(pattern);
+                    const matches = fileName.includes(pattern);
                     console.log(pc.dim(`  Testing ${file} (basename: ${fileName}) against pattern "${pattern}": ${matches}`));
                     return matches;
                 })
             );
         }
+        const loadedMain: LoadedFile[] = [];
+        for (const file of testFiles) loadedMain.push(await loadFile(file, null));
 
-        console.log(`${pc.bold(`Found ${testFiles.length} test file(s)${testFileFilter ? ` matching filter: ${testFileFilter}` : ''}`)}\n`);
+        const suiteEntries = [...plugins.testFiles('suite')];
+        const loadedSuite: LoadedFile[] = [];
+        for (const { file, pluginName } of suiteEntries) loadedSuite.push(await loadFile(file, pluginName));
 
-        for (const file of testFiles) {
-            console.log(`\n${pc.blue(pc.bold(`Running tests from: ${file}`))}`);
+        // Main and suite files are loaded (imported once, registrations snapshotted) before any
+        // of them runs, so a misconfigured `concurrency` aborts here instead of after burning
+        // time on earlier tests. Preflight has already run by this point, so this no longer
+        // imports them ahead of the state preflight sets up.
+        validateConcurrency([...loadedMain, ...loadedSuite]);
 
-            testRegistry.length = 0;
-            scopeStack.length = 0;
-            scopeStack.push({ label: '', beforeHooks: [], afterHooks: [] });
-            await import(pathToFileURL(file).href);
+        console.log(`${pc.bold(`Found ${loadedMain.length} test file(s)${testFileFilters ? ` matching filter: ${testFileFilters.join(',')}` : ''}`)}\n`);
 
-            for (const testCase of testRegistry) {
-                if (testNameFilter) {
-                    const patterns = testNameFilter.split(',').map(p => p.trim());
-                    const matches = patterns.some(pattern => testCase.name.includes(pattern));
-                    if (!matches) {
-                        console.log(pc.dim(`  Test: ${testCase.name} - SKIPPED (filter: ${testNameFilter})`));
-                        continue;
-                    }
-                }
+        for (const loaded of loadedMain) {
+            console.log(`\n${pc.blue(pc.bold(`Running tests from: ${loaded.file}`))}`);
+            await runLoadedFile(loaded);
+        }
 
-                console.log(`  ${pc.bold(`Test: ${testCase.name}`)}`);
-
-                serverConsoleBuffer.length = 0;
-
-                const server = new ServerWrapper((cmd: string) => {
-                    console.log(`${pc.yellow('[Server]')} ${pc.dim(`Executing: ${cmd}`)}`);
-                    serverProcess.stdin.write(cmd + '\n', (err) => {
-                        if (err) console.error(`[Server] Write error: ${err}`);
-                    });
-                });
-
-                const createPlayer = async (options?: { username?: string }): Promise<PlayerWrapper> => {
-                    const uniqueId = randomUUID().split('-')[0];
-                    const botUsername = options?.username || `Test_${uniqueId}`;
-                    console.log(`${pc.cyan('[Bot]')} Creating bot: ${pc.bold(botUsername)}`);
-
-                    let mineflayerVersion = process.env.MC_VERSION;
-                    if (mineflayerVersion && mineflayerVersion.startsWith('26.1.')) {
-                        mineflayerVersion = '26.1';
-                    }
-
-                    const bot = createBot({
-                        host: 'localhost',
-                        port: 25565,
-                        username: botUsername,
-                        version: mineflayerVersion,
-                        auth: 'offline',
-                    });
-
-                    const player = new PlayerWrapper(bot);
-                    player._captureSpawnPromise();
-                    player.setServerWrapper(server);
-                    player._setBotOptions({
-                        host: 'localhost',
-                        port: 25565,
-                        version: mineflayerVersion,
-                        auth: 'offline',
-                    });
-
-                    await player.join();
-                    return player;
-                };
-
-                const player = await createPlayer();
-
-                const testStartTime = Date.now();
-
-                try {
-                    const abortController = new AbortController();
-                    const timeoutMs = process.env.TEST_TIMEOUT ? parseInt(process.env.TEST_TIMEOUT, 10) : 30000;
-                    let timeoutHandle: ReturnType<typeof setTimeout>;
-                    const timeoutPromise = new Promise<never>((_, reject) => {
-                        timeoutHandle = setTimeout(() => {
-                            abortController.abort();
-                            reject(new Error(`Test timed out after ${timeoutMs}ms. You can increase this by setting the TEST_TIMEOUT environment variable.`));
-                        }, timeoutMs);
-                    });
-
-                    await Promise.race([
-                        testCase.fn({ player, server, createPlayer, signal: abortController.signal }).finally(() => clearTimeout(timeoutHandle)),
-                        timeoutPromise
-                    ]);
-
-                    const durationMs = Date.now() - testStartTime;
-                    console.log(`    ${pc.green(pc.bold('PASSED'))} ${pc.dim(`(${formatDuration(durationMs)})`)}\n`);
-                    testResults.push({ file, testName: testCase.name, passed: true, durationMs });
-                } catch (error) {
-                    const durationMs = Date.now() - testStartTime;
-                    const errorMsg = (error as Error).message;
-
-                    console.log(`    ${pc.red(pc.bold('FAILED'))} ${pc.dim(`(${formatDuration(durationMs)})`)}: ${pc.red(errorMsg)}\n`);
-
-                    testResults.push({
-                        file,
-                        testName: testCase.name,
-                        passed: false,
-                        durationMs,
-                        error: error as Error
-                    });
-                } finally {
-                    await disconnectAllBots();
-                }
-            }
+        // Suite: plugin tests that run alongside user specs, tagged with the plugin's name.
+        for (const loaded of loadedSuite) {
+            console.log(`\n${pc.blue(pc.bold(`Running tests from: ${loaded.file} ${pc.dim(`(plugin ${loaded.pluginName})`)}`))}`);
+            await runLoadedFile(loaded);
         }
 
     } finally {
-        await disconnectAllBots();
+        await plugins.runCleanup(session);
+        await plugins.teardown();
+        await session.disconnectAllBots();
+        await env.teardown();
 
-        // Stop the server
-        if (serverProcess.exitCode === null && !serverProcess.killed) {
-            try {
-                serverProcess.stdin.write('stop\n');
-            } catch (err) {
-                console.log(pc.yellow(`[WARNING] Failed to send stop command to server: ${(err as Error).message}`));
-            }
+        if (config.reports?.json) {
+            writeJsonReport(config.reports.json, config.environment.name, testResults);
+            console.log(pc.dim(`JSON report: ${config.reports.json}`));
         }
-
-        await new Promise<void>((resolve) => {
-            const timeout = setTimeout(() => {
-                console.log(pc.yellow('[WARNING] Server did not stop gracefully, forcing shutdown...'));
-                serverProcess.kill();
-                resolve();
-            }, 30000);
-
-            serverProcess.once('exit', (code) => {
-                clearTimeout(timeout);
-                if (code !== 0) {
-                    console.log(pc.yellow(`[WARNING] Server exited with code: ${code}`));
-                }
-                resolve();
-            });
-        });
-
-        serverProcess.removeAllListeners();
-        serverProcess.stdin.end();
-        serverProcess.stdout.destroy();
-        serverProcess.stderr.destroy();
+        if (config.reports?.junit) {
+            writeJUnitReport(config.reports.junit, config.environment.name, testResults);
+            console.log(pc.dim(`JUnit report: ${config.reports.junit}`));
+        }
 
         exitCode = printTestSummary(testResults);
 
+        process.exitCode = exitCode;
         setTimeout(() => {
             process.exit(exitCode);
         }, 1000).unref();
@@ -317,3 +312,86 @@ export async function runTestSession(): Promise<void> {
 }
 
 export { sleep, poll, waitForAssertion, waitUntil, waitForStable } from './lib/utils.js';
+
+/**
+ * `--ping`: connects to the environment, probes its declared console channel(s), and — if the
+ * environment has an account pool — leases one account and checks that it authenticates. No
+ * spec files run. Exits non-zero (after a readable diagnosis) on any problem, so it's safe to
+ * gate a build on.
+ */
+export async function runPingSession(config: RunnerConfig = loadRunnerConfig()): Promise<void> {
+    console.log(pc.bold(`plugwright ping: environment "${config.environment.name}" (${config.environment.mode})`));
+
+    const env = await resolveEnvironment(config.environment);
+    const session = new Session(env);
+    const plugins = new PluginHost();
+    await plugins.load(config.plugins ?? []);
+    plugins.registerMatchers();
+    session.onPlayerCreate = (player, ctx) => plugins.onPlayerCreate(player, ctx);
+
+    const problems: string[] = [];
+    let account: Account | undefined;
+    let pool: AccountPool | null = null;
+
+    try {
+        await env.setup(session);
+        session.refreshConsole();
+        await plugins.setup(session);
+
+        if (env.capabilities.console) {
+            console.log(pc.green(`console: reachable (output=${session.console?.output})`));
+        } else {
+            console.log(pc.yellow('console: unavailable'));
+            problems.push('no console channel could be reached');
+        }
+
+        pool = env.accounts?.() ?? null;
+        if (pool) {
+            try {
+                account = await pool.lease();
+                await env.beforeJoin?.();
+                const connOpts = env.connection();
+                const botOptions = {
+                    ...connOpts,
+                    auth: account.auth,
+                    profilesFolder: account.microsoftCacheDir,
+                };
+                const bot = session.createBot({ ...botOptions, username: account.username });
+                const player = new PlayerWrapper(bot, session);
+                player._captureSpawnPromise();
+                player._setBotOptions(botOptions);
+                player._setAccount(account);
+                await player.join();
+                console.log(pc.green(`auth: "${account.username}" connected and authenticated`));
+                await session.disconnectBot(bot, account.username);
+                session.removeBot(bot);
+            } catch (error) {
+                problems.push(`auth check failed: ${(error as Error).message}`);
+            }
+        } else {
+            console.log(pc.dim('auth: no account pool configured for this environment, skipped'));
+        }
+    } catch (error) {
+        problems.push((error as Error).message);
+    } finally {
+        if (account && pool) pool.release(account);
+        await plugins.teardown();
+        await session.disconnectAllBots();
+        await env.teardown();
+    }
+
+    let exitCode = 0;
+    if (problems.length > 0) {
+        console.log(pc.red('\nplugwrightPing failed:'));
+        for (const problem of problems) console.log(pc.red(`  - ${problem}`));
+        exitCode = 1;
+    } else {
+        console.log(pc.green('\nplugwrightPing: environment is reachable'));
+    }
+
+    // Both: the unref'd timer only fires if something else is still holding the loop
+    // open (a lingering socket); process.exitCode carries the result when it isn't.
+    process.exitCode = exitCode;
+    setTimeout(() => process.exit(exitCode), 500).unref();
+}
+

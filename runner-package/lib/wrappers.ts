@@ -37,23 +37,47 @@ export class GuiItemLocator {
     }
 
     /**
-     * Gets the lore text of the located item.
-     * Re-queries the GUI each time it's called.
-     */
-    loreText(): string {
-        const item = this._tryFind();
-        if (!item) return '';
-        return item.getLore().join(' ');
-    }
-
-    /**
      * Gets the display name of the located item.
      * Re-queries the GUI each time it's called.
      */
     displayName(): string {
         const item = this._tryFind();
         if (!item) return '';
-        return item.getDisplayName();
+        return item.displayName;
+    }
+
+    /**
+     * Alias for `displayName()`.
+     */
+    getDisplayName(): string {
+        return this.displayName();
+    }
+
+    /**
+     * Gets the lore lines of the located item.
+     * Re-queries the GUI each time it's called.
+     */
+    lore(): string[] {
+        const item = this._tryFind();
+        if (!item) return [];
+        return item.lore;
+    }
+
+    /**
+     * Alias for `lore()`.
+     */
+    getLore(): string[] {
+        return this.lore();
+    }
+
+    /**
+     * Gets the lore text of the located item (joined by space).
+     * Re-queries the GUI each time it's called.
+     */
+    loreText(): string {
+        const item = this._tryFind();
+        if (!item) return '';
+        return item.lore.join(' ');
     }
 
     /**
@@ -89,8 +113,8 @@ export class GuiItemLocator {
         const rows = items.map(item => ({
             slot: item.slot,
             name: item.name,
-            displayName: item.getDisplayName(),
-            lore: item.getLore().join(' | ')
+            displayName: item.displayName,
+            lore: item.lore.join(' | ')
         }));
 
         if (rows.length === 0) {
@@ -277,6 +301,14 @@ export class ItemWrapper {
         return String(raw);
     }
 
+    get displayName(): string {
+        return this.getDisplayName();
+    }
+
+    get lore(): string[] {
+        return this.getLore();
+    }
+
     getDisplayName(): string {
         const components = (this.raw as any).components;
         if (Array.isArray(components)) {
@@ -378,8 +410,8 @@ export class GuiWrapper {
             throw new Error(`[GUI] Failed to click: Item not found matching criteria in "${this.title}"`);
         }
 
-        const lore = item.getLore();
-        console.log(`[GUI] Clicking item: ${item.getDisplayName()}`);
+        const lore = item.lore;
+        console.log(`[GUI] Clicking item: ${item.displayName}`);
         console.log(`  Material: ${item.name}`);
         console.log(`  Slot: ${item.slot}`);
         if (lore.length > 0) {
@@ -388,175 +420,10 @@ export class GuiWrapper {
 
         await this.bot.clickWindow(item.slot, 0, 0);
     }
-
-    // -----------------------------------------------------------------------
-    // Public deprecated methods — warn once then delegate to internal methods.
-    // -----------------------------------------------------------------------
-
-    /**
-     * @deprecated Use gui.locator() with expectations instead. This method will be removed in a future version.
-     * @internal This class is primarily for internal use. Use LiveGuiHandle and GuiItemLocator instead.
-     */
-    hasItem(predicate: (item: ItemWrapper) => boolean): boolean {
-        console.warn('[DEPRECATED] GuiWrapper.hasItem() is deprecated. Use gui.locator() instead.');
-        return this._hasItemInternal(predicate);
-    }
-
-    /**
-     * @deprecated Use gui.locator() to get items. This method will be removed in a future version.
-     * @internal This class is primarily for internal use. Use LiveGuiHandle and GuiItemLocator instead.
-     */
-    findItem(predicate: (item: ItemWrapper) => boolean): ItemWrapper | undefined {
-        console.warn('[DEPRECATED] GuiWrapper.findItem() is deprecated. Use gui.locator() instead.');
-        return this._findItemInternal(predicate);
-    }
-
-    /**
-     * @deprecated Use multiple gui.locator() calls if needed. This method will be removed in a future version.
-     * @internal This class is primarily for internal use. Use LiveGuiHandle and GuiItemLocator instead.
-     */
-    findAllItems(predicate: (item: ItemWrapper) => boolean): ItemWrapper[] {
-        console.warn('[DEPRECATED] GuiWrapper.findAllItems() is deprecated. Use gui.locator() instead.');
-        return this._findAllItemsInternal(predicate);
-    }
-
-    /**
-     * @deprecated Use gui.locator().click() instead. This method will be removed in a future version.
-     * @internal This class is primarily for internal use. Use LiveGuiHandle and GuiItemLocator instead.
-     */
-    async clickItem(predicate: (item: ItemWrapper) => boolean): Promise<void> {
-        console.warn('[DEPRECATED] GuiWrapper.clickItem() is deprecated. Use gui.locator().click() instead.');
-        return this._clickItemInternal(predicate);
-    }
 }
 
 export function createPlayerExtensions(bot: Bot) {
     return {
-        async waitForGuiItem(
-            itemMatcher: (item: ItemWrapper) => boolean,
-            options: { timeout?: number; pollingRate?: number } = {}
-        ): Promise<ItemWrapper> {
-            console.warn('[DEPRECATED] player.waitForGuiItem() is deprecated. Use gui.locator() with expectations instead. See documentation for migration guide.');
-
-            const { timeout = 5000, pollingRate = 100 } = options;
-            const startTime = Date.now();
-
-            for (;;) {
-                if (bot.currentWindow) {
-                    const window = bot.currentWindow as Window;
-                    const items = window.slots
-                        .filter((item): item is RawItem => item != null)
-                        .map(item => new ItemWrapper(item));
-
-                    const matchedItem = items.find(itemMatcher);
-
-                    if (matchedItem) {
-                        console.log(`[Player] Found GUI item: ${matchedItem.getDisplayName()} at slot ${matchedItem.slot}`);
-                        return matchedItem;
-                    }
-                }
-
-                if (Date.now() - startTime >= timeout) {
-                    throw new Error(`[Player] Timeout waiting for GUI item (${timeout}ms)`);
-                }
-
-                await new Promise(resolve => setTimeout(resolve, pollingRate));
-            }
-        },
-
-        async clickGuiItem(
-            itemMatcher: (item: ItemWrapper) => boolean,
-            options: { timeout?: number; pollingRate?: number } = {}
-        ): Promise<void> {
-            console.warn('[DEPRECATED] player.clickGuiItem() is deprecated. Use gui.locator().click() instead. See documentation for migration guide.');
-
-            const { timeout = 5000, pollingRate = 100 } = options;
-            const startTime = Date.now();
-
-            for (;;) {
-                if (bot.currentWindow) {
-                    const window = bot.currentWindow as Window;
-                    const items = window.slots
-                        .filter((item): item is RawItem => item != null)
-                        .map(item => new ItemWrapper(item));
-
-                    const matchedItem = items.find(itemMatcher);
-
-                    if (matchedItem) {
-                        const lore = matchedItem.getLore();
-                        console.log(`[Player] Clicking GUI item: ${matchedItem.getDisplayName()}`);
-                        console.log(`  Material: ${matchedItem.name}`);
-                        console.log(`  Slot: ${matchedItem.slot}`);
-                        if (lore.length > 0) {
-                            console.log(`  Lore: ${lore.join(' | ')}`);
-                        }
-
-                        await bot.clickWindow(matchedItem.slot, 0, 0);
-                        return;
-                    }
-                }
-
-                if (Date.now() - startTime >= timeout) {
-                    throw new Error(`[Player] Timeout waiting for GUI item to click (${timeout}ms)`);
-                }
-
-                await new Promise(resolve => setTimeout(resolve, pollingRate));
-            }
-        },
-
-        async waitForGui(
-            guiMatcher: (gui: GuiWrapper) => boolean,
-            options: { timeout?: number } = {}
-        ): Promise<GuiWrapper> {
-            console.warn('[DEPRECATED] player.waitForGui() is deprecated. Use player.gui({ title }) instead. See documentation for migration guide.');
-
-            const { timeout = 5000 } = options;
-
-            return new Promise((resolve, reject) => {
-                let settled = false;
-
-                const tryMatch = (): GuiWrapper | null => {
-                    if (!bot.currentWindow) return null;
-                    const gui = new GuiWrapper(bot, bot.currentWindow as Window);
-                    return guiMatcher(gui) ? gui : null;
-                };
-
-                const settle = (gui: GuiWrapper) => {
-                    if (settled) return;
-                    settled = true;
-                    cleanup();
-                    console.log(`[Player] GUI matched: "${gui.title}"`);
-                    resolve(gui);
-                };
-
-                const attempt = () => {
-                    if (settled) return;
-                    const matched = tryMatch();
-                    if (matched) settle(matched);
-                };
-
-                const deadline = setTimeout(() => {
-                    if (settled) return;
-                    settled = true;
-                    cleanup();
-                    reject(new Error(`[Player] Timeout waiting for GUI matching predicate (${timeout}ms)`));
-                }, timeout);
-
-                const onWindowOpen = () => {
-                    setImmediate(attempt);
-                };
-
-                const cleanup = () => {
-                    clearTimeout(deadline);
-                    bot.removeListener('windowOpen', onWindowOpen);
-                };
-
-                bot.on('windowOpen', onWindowOpen);
-
-                setImmediate(attempt);
-            });
-        },
-
         /**
          * Get a live handle to a GUI matching the title.
          * It waits ONLY until a GUI with matching title exists.

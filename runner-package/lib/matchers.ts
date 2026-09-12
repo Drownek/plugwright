@@ -2,7 +2,6 @@ import { Matchers } from './expect.js';
 import { PlayerWrapper } from './player.js';
 import { ServerWrapper } from './server.js';
 import { GuiItemLocator } from './wrappers.js';
-import { serverConsoleBuffer } from './bot-utils.js';
 import { sleep } from './utils.js';
 
 export class RunnerMatchers<T = unknown> extends Matchers<T> {
@@ -62,6 +61,20 @@ export class RunnerMatchers<T = unknown> extends Matchers<T> {
         throw new Error(this.isNot ? passMessage() : failMessage());
     }
 
+    /**
+     * Waits for the player or server console to receive a message matching the expected text or pattern.
+     *
+     * ### Concurrency & Isolation Guidance:
+     * - **`expect(player)`**: Checks `player.messageBuffer`, which is strictly isolated per bot.
+     *   Always prefer `expect(player)` when asserting on chat, notifications, or feedback addressed to a player.
+     *   It is completely safe from race conditions in concurrent tests (`concurrency: N`).
+     * - **`expect(server)`**: Reads `session.consoleLog`, which is a single shared stream for the entire server.
+     *   In concurrent test execution (`concurrency: N`), lines from other bots appear in this log simultaneously.
+     *   When asserting on server logs under concurrency, always qualify patterns with `${player.username}`
+     *   (e.g. `new RegExp(`Gave 100 to ${player.username}`)`) or narrow the search window with `options.since`.
+     *   For global assertions without a player identifier (e.g. `[Plugin] Reload complete`), run the test without
+     *   the `concurrency` option as a standard, single-runner test.
+     */
     async toHaveReceivedMessage(
         this: RunnerMatchers<PlayerWrapper | ServerWrapper>,
         expectedMessage: string | RegExp,
@@ -73,8 +86,28 @@ export class RunnerMatchers<T = unknown> extends Matchers<T> {
             return strict ? msg === expectedMessage : msg.includes(expectedMessage);
         };
 
-        const buffer = this.actual instanceof PlayerWrapper ? this.actual.messageBuffer : serverConsoleBuffer;
-        const view = (): string[] => since !== undefined ? buffer.slice(since) : buffer;
+        const session = (this.actual as PlayerWrapper | ServerWrapper).session;
+
+        // Reading the server log needs a console that streams everything. A console that only
+        // answers the commands it is given (RCON) leaves the buffer empty, and the assertion
+        // would fail after a full timeout with nothing explaining why.
+        if (!(this.actual instanceof PlayerWrapper) && session.env.capabilities.consoleOutput !== 'full') {
+            throw new Error(
+                `Cannot read the server log on environment "${session.env.id}": its console output level is ` +
+                `"${session.env.capabilities.consoleOutput}". Mark the test with { requires: { consoleOutput: 'full' } } ` +
+                'to have it skipped there instead.'
+            );
+        }
+
+        // A player's messages are its own (see `PlayerWrapper.messageBuffer`) so one bot's chat
+        // never satisfies an assertion made against another; the server log has no such split,
+        // it's one console shared by the whole session — and never cleared, so a test that
+        // doesn't pass `since` defaults to its own `ServerWrapper.startIndex` instead of 0.
+        const buffer = this.actual instanceof PlayerWrapper
+            ? this.actual.messageBuffer
+            : session.consoleLog;
+        const effectiveSince = since ?? (this.actual instanceof PlayerWrapper ? undefined : this.actual.startIndex);
+        const view = (): string[] => buffer.slice(effectiveSince);
 
         await this.pollAssertion(
             () => view().some(isMatch),
@@ -179,9 +212,9 @@ interface PollOptions {
 }
 
 export class PollMatchers<T> {
-    private fn: () => T | Promise<T>;
-    private options: Required<Omit<PollOptions, 'message'>> & { message?: string };
-    private isNot: boolean;
+    private readonly fn: () => T | Promise<T>;
+    private readonly options: Required<Omit<PollOptions, 'message'>> & { message?: string };
+    private readonly isNot: boolean;
 
     constructor(fn: () => T | Promise<T>, options: PollOptions = {}, isNot: boolean = false) {
         this.fn = fn;

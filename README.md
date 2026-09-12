@@ -10,15 +10,10 @@ End-to-end testing framework for Paper/Spigot Minecraft plugins. Supports JavaSc
 ![Video showcase demonstrating Plugwright bots joining a server, moving, and interacting with GUIs](https://github.com/user-attachments/assets/0272a6d9-f9ab-4486-8bf3-ee5909a10ee9)
 
 <details>
-<summary>⚠️ <strong>Upgrading from Paperwright (v1.x)? Click here for migration steps.</strong></summary>
+<summary>⚠️ <strong>Upgrading from Plugwright 2.x? The npm package moved.</strong></summary>
 <br>
-This framework has been renamed from Paperwright to Plugwright. If you are upgrading from an older version, update the following:
-
-1. Change `id("io.github.drownek.paperwright")` to `id("io.github.drownek.plugwright")`.
-2. Rename your `paperwright { ... }` configuration block to `plugwright { ... }` and Gradle tasks (e.g. `./gradlew paperwrightTest` to `./gradlew plugwrightTest`).
-3. In your `package.json`, change `@drownek/paperwright` to `@drownek/plugwright` and run `npm install`.
-4. Update your test files: `import { test } from '@drownek/paperwright'` to `import { test } from '@drownek/plugwright'`.
-5. Change your CI to use `drownek/plugwright-action@v1`.
+The runner is published as <code>@plugwright/runner</code> from 3.0 onwards; <code>@drownek/plugwright</code> stops receiving releases at 2.x. Change the dependency in your <code>package.json</code>, run <code>npm install</code>, and update the import in your test files. Nothing else moves: the Gradle plugin id stays <code>io.github.drownek.plugwright</code>.
+See the full <a href="https://plugwright.dev/migration-v3">v2 to v3 Migration Guide</a> for layout changes, configuration updates, and new features.
 </details>
 
 ## Features
@@ -50,21 +45,29 @@ Before you begin, you need:
 **1. Add the plugin to your `build.gradle.kts`:**
 
 ```kotlin
+import me.drownek.plugwright.local.LocalMode
+
 plugins {
-    id("io.github.drownek.plugwright") version "2.0.4"
+    id("io.github.drownek.plugwright") version "3.0.0"
 }
 
 plugwright {
-    minecraftVersion.set("1.19.4")
-    testsDir.set(file("src/test/e2e"))
-    acceptEula.set(true)
-    
-    // Download some dependencies your plugin might need
-    downloadPlugins {
-        url("https://url.to/plugin1.jar")
-        url("https://url.to/plugin2.jar")
-        // ... etc
+    environments {
+        // Paper downloaded, patched, started and killed by plugwright itself.
+        create("local", LocalMode) {
+            minecraftVersion.set("1.19.4")
+            acceptEula.set(true)
+            
+            // Download some dependencies your plugin might need
+            downloadPlugins {
+                url("https://url.to/plugin1.jar")
+                url("https://url.to/plugin2.jar")
+                // ... etc
+            }
+        }
     }
+
+    testsDir.set(file("src/test/e2e"))
 
     // If true, always downloads and uses an isolated Node.js version, ignoring the system Node.
     downloadNode.set(true)
@@ -75,13 +78,21 @@ plugwright {
 
 **2. Initialize the test folder:**
 
-Run the init command to set up your test folder.
-This will automatically generate your package.json, TypeScript configuration, and an example test in a chosen directory.
+Run the init command to set up your test folder. It asks where to put it, then writes an npm project with a `package.json`, a TypeScript config, a `.gitignore`, an example spec and an example runner plugin:
 
-This command is interactive, so simply follow the prompts on your screen:
 ```bash
 ./gradlew plugwrightInit
 ```
+
+```
+src/test/e2e/
+  tests/example.spec.ts          your specs go here
+  plugins/example-plugin.ts      hooks, fixtures and matchers
+  package.json, tsconfig.json
+  .gitignore                     node_modules, dist, generated
+```
+
+Compiled specs land in `dist`, and everything an environment writes — the Paper server the local one starts, for instance — in `generated`. Neither belongs in version control. See [Project Layout](https://plugwright.dev/project-layout).
 
 **3. Run your tests:**
 
@@ -92,6 +103,50 @@ This command is interactive, so simply follow the prompts on your screen:
 > **💡 Tip:** Plugwright hooks into your build process and tests against your compiled plugin jar. Ensure your plugin compiles successfully (e.g. `jar` or `shadowJar` task) before running tests!
 
 > **💡 Want to see a working example?** Check out the [example_plugin](./example_plugin) directory in this repository.
+
+## Testing against more than one server
+
+The block above describes a single local Paper server, which is all most projects need. When you also want to run the same suite against a staging server someone else keeps running, name the servers explicitly:
+
+```kotlin
+import me.drownek.plugwright.api.secret
+import me.drownek.plugwright.external.ExternalMode
+import me.drownek.plugwright.local.LocalMode
+
+plugwright {
+    testsDir.set(file("src/test/e2e"))
+
+    environments {
+        create("local", LocalMode) {
+            minecraftVersion.set("1.21.11")
+            acceptEula.set(true)
+        }
+
+        create("staging", ExternalMode) {
+            host.set("mc.example.com")
+            minecraftVersion.set("1.20.4")
+
+            console { rcon { port.set(25575); password.set(secret.env("RCON_PASSWORD")) } }
+            accounts {
+                autoRegister {
+                    usernamePattern.set("pw_%04d")
+                    password.set(secret.env("BOT_PASSWORD"))
+                    max.set(4)
+                }
+            }
+            plugins { npm("@plugwright/auth-authme") }
+        }
+    }
+}
+```
+
+`./gradlew plugwrightTest` runs the matrix and prints a summary per environment; `./gradlew plugwrightTestStaging` runs one. A server behind a login wall needs a runner plugin to get past it, and `@plugwright/auth-authme` is the reference implementation for AuthMe-style login. Writing your own kind of environment — a proxy, a Compose stack — is a Kotlin mode plus an npm package.
+
+- [Project layout](https://plugwright.dev/project-layout) — where specs, plugins and generated files live
+- [Environments](https://plugwright.dev/environments) — modes, tasks, the matrix
+- [External servers](https://plugwright.dev/external-servers) — console channels, account pools, cleanup
+- [Runner plugins](https://plugwright.dev/plugins) — hooks, fixtures, matchers, inherited tests
+- [Writing a mode](https://plugwright.dev/custom-modes)
 
 ## Why Plugwright vs MockBukkit?
 
@@ -134,6 +189,18 @@ jobs:
           # Path to your plugin gradle project if it's not at the project's root
           working-directory: "."
 ```
+
+## Used in Production
+
+<a href="https://holyworld.io/">
+  <img align="left" src="https://github.com/user-attachments/assets/8c40f2ea-fa71-4299-ae05-28af23bf252c" width="80" alt="HolyWorld Logo" style="margin-right: 15px;">
+</a>
+
+<strong><a href="https://holyworld.io/">HolyWorld</a></strong> <br>
+~10,000 peak online players. Plugwright powers their CI/CD pipeline for end-to-end plugin testing. <br>
+<em>Integrated by <a href="https://github.com/monikon22">@monikon22</a></em>
+
+<br clear="both"/>
 
 ## Documentation & Examples
 

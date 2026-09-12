@@ -20,6 +20,8 @@
         "pages": [
           "introduction",
           "quickstart",
+          "migration-v3",
+          "project-layout",
           "configuration"
         ]
       },
@@ -34,6 +36,22 @@
           "ci-cd",
           "api-reference",
           "examples"
+        ]
+      },
+      {
+        "group": "Environments",
+        "pages": [
+          "environments",
+          "external-servers",
+          "plugins",
+          "reports",
+          "custom-modes"
+        ]
+      },
+      {
+        "group": "Maintaining",
+        "pages": [
+          "publishing"
         ]
       }
     ]
