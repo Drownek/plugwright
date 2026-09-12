@@ -15,8 +15,17 @@ function statusOf(result: TestResult): 'PASS' | 'FAIL' | 'SKIP' {
     return result.passed ? 'PASS' : 'FAIL';
 }
 
-/** min/avg/max duration across a `concurrency > 1` result's instances. */
-function instanceStats(instances: NonNullable<TestResult['instances']>): { min: number; avg: number; max: number } {
+type Instances = NonNullable<TestResult['instances']>;
+
+/** The instances that actually ran the test. A skipped instance carries `durationMs: 0` and no
+ *  outcome of its own, so counting it as a pass overstates how many bots got through and its
+ *  zero drags every duration statistic down. */
+function ranInstances(instances: Instances): Instances {
+    return instances.filter(i => !i.skipped);
+}
+
+/** min/avg/max duration across a `concurrency > 1` result's instances that ran. */
+function instanceStats(instances: Instances): { min: number; avg: number; max: number } {
     const durations = instances.map(i => i.durationMs);
     return {
         min: Math.min(...durations),
@@ -39,7 +48,15 @@ export function printTestSummary(testResults: TestResult[]): number {
     console.log(`  Total:    ${pc.bold(String(testResults.length))}`);
     console.log(`  Passed:   ${pc.green(pc.bold(String(passed.length)))}`);
     console.log(`  Failed:   ${failed.length > 0 ? pc.red(pc.bold(String(failed.length))) : pc.dim(String(failed.length))}`);
-    console.log(`  Skipped:  ${skipped.length > 0 ? pc.yellow(pc.bold(String(skipped.length))) : pc.dim(String(skipped.length))}`);
+    // A test row only counts as skipped when every one of its concurrent instances skipped it,
+    // so under `concurrency: N` a block that stops early on some bots leaves "Skipped: 0" while
+    // dozens of instances never ran. Count those too rather than let them disappear.
+    const skippedInstances = testResults.reduce(
+        (sum, r) => sum + (r.instances?.filter(i => i.skipped).length ?? 0),
+        0,
+    );
+    const instanceNote = skippedInstances > 0 ? pc.dim(` (${skippedInstances} concurrent instances)`) : '';
+    console.log(`  Skipped:  ${skipped.length > 0 ? pc.yellow(pc.bold(String(skipped.length))) : pc.dim(String(skipped.length))}${instanceNote}`);
     console.log(`  Duration: ${pc.dim(formatDuration(totalDuration))}`);
 
     const statusCol = 'Status';
@@ -66,10 +83,15 @@ export function printTestSummary(testResults: TestResult[]): number {
                 : pc.red(pc.bold(statusPadded));
         const duration = formatDuration(result.durationMs);
         // A concurrent test/block's row is one aggregate over N instances — say how many
-        // passed right in the table, not just in the failed-tests detail below.
-        const instanceTag = result.instances
-            ? pc.dim(` [${result.instances.filter(i => i.passed).length}/${result.instances.length}]`)
-            : '';
+        // passed right in the table, not just in the failed-tests detail below. The ratio is
+        // over the instances that ran, with the skipped ones counted separately: reading
+        // "[8/10]" when two of those ten never reached this test is worse than reading nothing.
+        const instanceTag = result.instances ? (() => {
+            const ran = ranInstances(result.instances!);
+            const skippedCount = result.instances!.length - ran.length;
+            const skipNote = skippedCount > 0 ? `, ${skippedCount} skipped` : '';
+            return pc.dim(` [${ran.filter(i => i.passed).length}/${ran.length}${skipNote}]`);
+        })() : '';
         console.log(`  ${coloredStatus}  ${result.testName.padEnd(testWidth)}  ${pc.dim(duration.padStart(durationWidth))}${instanceTag}`);
     }
 
@@ -99,14 +121,28 @@ export function printTestSummary(testResults: TestResult[]): number {
             }
 
             if (result.instances) {
-                const { min, avg, max } = instanceStats(result.instances);
-                console.log(`    ${pc.dim(`${result.instances.length} instances: min ${formatDuration(min)} / avg ${formatDuration(avg)} / max ${formatDuration(max)}`)}`);
+                const ran = ranInstances(result.instances);
+                const skippedCount = result.instances.length - ran.length;
+                const skipNote = skippedCount > 0 ? `, ${skippedCount} skipped` : '';
+                if (ran.length > 0) {
+                    const { min, avg, max } = instanceStats(ran);
+                    console.log(`    ${pc.dim(`${ran.length} instances ran${skipNote}: min ${formatDuration(min)} / avg ${formatDuration(avg)} / max ${formatDuration(max)}`)}`);
+                } else {
+                    console.log(`    ${pc.dim(`0 instances ran${skipNote}`)}`);
+                }
                 for (const instance of result.instances) {
                     const tag = `[${instance.index}/${result.instances.length}]`;
                     const label = instance.botUsername ?? '?';
-                    const status = instance.passed ? pc.green('OK') : pc.red('FAIL');
-                    const detail = instance.error ? pc.red(` ${instance.error.message}`) : '';
-                    console.log(`      ${pc.dim(`- ${tag} ${label}:`)} ${status} ${pc.dim(`(${formatDuration(instance.durationMs)})`)}${detail}`);
+                    const status = instance.skipped
+                        ? pc.yellow('SKIP')
+                        : instance.passed ? pc.green('OK') : pc.red('FAIL');
+                    const detail = instance.skipped
+                        ? pc.dim(instance.skipReason ? ` ${instance.skipReason}` : '')
+                        : instance.error ? pc.red(` ${instance.error.message}`) : '';
+                    // A skip has no duration of its own, so printing "(0ms)" next to it reads
+                    // as an instant pass — the exact confusion this branch exists to remove.
+                    const timing = instance.skipped ? '' : ` ${pc.dim(`(${formatDuration(instance.durationMs)})`)}`;
+                    console.log(`      ${pc.dim(`- ${tag} ${label}:`)} ${status}${timing}${detail}`);
                 }
             }
 
@@ -143,6 +179,12 @@ export function writeJsonReport(path: string, environmentName: string, testResul
             passed: passed.length,
             failed: failed.length,
             skipped: skipped.length,
+            // Instance-level skips, which `skipped` above cannot show: a test row is only
+            // skipped when all of its concurrent instances were.
+            skippedInstances: testResults.reduce(
+                (sum, r) => sum + (r.instances?.filter(i => i.skipped).length ?? 0),
+                0,
+            ),
             durationMs,
         },
         tests: testResults.map(r => ({
@@ -163,6 +205,8 @@ export function writeJsonReport(path: string, environmentName: string, testResul
                     passed: i.passed,
                     durationMs: i.durationMs,
                     error: i.error ? i.error.message : null,
+                    skipped: !!i.skipped,
+                    skipReason: i.skipReason ?? null,
                 }))
                 : null,
         })),

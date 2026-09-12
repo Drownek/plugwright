@@ -4,6 +4,10 @@ import { ServerWrapper } from './server.js';
 import { GuiItemLocator } from './wrappers.js';
 import { sleep } from './utils.js';
 
+/** How many of the most recent lines a failed `toHaveReceivedMessage` quotes back. Enough to
+ *  show the server's actual answer without pasting a login wall's worth of chat into a report. */
+const MESSAGE_TAIL_LINES = 10;
+
 export class RunnerMatchers<T = unknown> extends Matchers<T> {
     constructor(actual: T, isNot: boolean = false) {
         super(actual, isNot);
@@ -109,10 +113,21 @@ export class RunnerMatchers<T = unknown> extends Matchers<T> {
         const effectiveSince = since ?? (this.actual instanceof PlayerWrapper ? undefined : this.actual.startIndex);
         const view = (): string[] => buffer.slice(effectiveSince);
 
+        // What arrived instead is the whole diagnosis: "the server said nothing" and "the server
+        // answered something else" fail identically otherwise, and on a live server under
+        // `concurrency: N` that is the difference between a throttled command and a real bug.
+        const received = (): string => {
+            const seen = view();
+            if (seen.length === 0) return '; nothing was received';
+            const tail = seen.slice(-MESSAGE_TAIL_LINES);
+            const elided = seen.length > tail.length ? `last ${tail.length} of ${seen.length}` : `${seen.length}`;
+            return `; ${elided} received: ${tail.map(line => JSON.stringify(line)).join(', ')}`;
+        };
+
         await this.pollAssertion(
             () => view().some(isMatch),
             () => `Expected NOT to receive message matching "${expectedMessage}", but received: "${view().find(isMatch)}"`,
-            () => `Expected message matching "${expectedMessage}" not received`,
+            () => `Expected message matching "${expectedMessage}" not received${received()}`,
             { timeout, pollingRate }
         );
     }
