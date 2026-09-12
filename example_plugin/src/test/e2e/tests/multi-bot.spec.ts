@@ -23,7 +23,7 @@ test('multi-bot teleportation', async ({ player, createPlayer }) => {
     // Teleport primary player to the friend
     // We cant be sure that message was sent and fully processed, so it not a promise.
     // In this case, we should check whether teleporting has succeeded, so we expect player position in next step.
-    player.chat(`/tp ${player.username} ${friend.username}`);
+    player.chat(`/tp ${friend.username}`);
 
     // Verify the primary player is near the friend
     // Even if server hadn't processed teleport command yet, this method is waiting for default of 5000ms
