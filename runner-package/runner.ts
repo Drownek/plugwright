@@ -29,7 +29,7 @@ installSourceMapSupport();
 export { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator };
 export { PlayerWrapper };
 export { ServerWrapper } from './lib/server.js';
-export { test, describe, beforeEach, afterEach } from './lib/test-registry.js';
+export { test, describe, beforeEach, afterEach, afterAll } from './lib/test-registry.js';
 export type { TestOptions, TestCase, SerialOptions, SerialBlock, RequiresMap } from './lib/test-registry.js';
 export { expect } from './lib/matchers.js';
 export { loadRunnerConfig, resolveSecret, isSecretRef } from './lib/config.js';
