@@ -48,7 +48,15 @@ export function printTestSummary(testResults: TestResult[]): number {
     console.log(`  Total:    ${pc.bold(String(testResults.length))}`);
     console.log(`  Passed:   ${pc.green(pc.bold(String(passed.length)))}`);
     console.log(`  Failed:   ${failed.length > 0 ? pc.red(pc.bold(String(failed.length))) : pc.dim(String(failed.length))}`);
-    console.log(`  Skipped:  ${skipped.length > 0 ? pc.yellow(pc.bold(String(skipped.length))) : pc.dim(String(skipped.length))}`);
+    // A test row only counts as skipped when every one of its concurrent instances skipped it,
+    // so under `concurrency: N` a block that stops early on some bots leaves "Skipped: 0" while
+    // dozens of instances never ran. Count those too rather than let them disappear.
+    const skippedInstances = testResults.reduce(
+        (sum, r) => sum + (r.instances?.filter(i => i.skipped).length ?? 0),
+        0,
+    );
+    const instanceNote = skippedInstances > 0 ? pc.dim(` (${skippedInstances} concurrent instances)`) : '';
+    console.log(`  Skipped:  ${skipped.length > 0 ? pc.yellow(pc.bold(String(skipped.length))) : pc.dim(String(skipped.length))}${instanceNote}`);
     console.log(`  Duration: ${pc.dim(formatDuration(totalDuration))}`);
 
     const statusCol = 'Status';
@@ -171,6 +179,12 @@ export function writeJsonReport(path: string, environmentName: string, testResul
             passed: passed.length,
             failed: failed.length,
             skipped: skipped.length,
+            // Instance-level skips, which `skipped` above cannot show: a test row is only
+            // skipped when all of its concurrent instances were.
+            skippedInstances: testResults.reduce(
+                (sum, r) => sum + (r.instances?.filter(i => i.skipped).length ?? 0),
+                0,
+            ),
             durationMs,
         },
         tests: testResults.map(r => ({
