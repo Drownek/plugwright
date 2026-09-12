@@ -33,6 +33,8 @@ See the full <a href="https://plugwright.dev/migration-v3">v2 to v3 Migration Gu
 
 `🔧` **Gradle Integration** – Run your entire suite with a single command.
 
+`🌍` **Multi-Server Ready** – Run tests against staging or external servers (see [External Servers](https://plugwright.dev/external-servers)).
+
 ## Quick Start
 
 **0. Prerequisites:**
@@ -103,50 +105,6 @@ Compiled specs land in `dist`, and everything an environment writes — the Pape
 > **💡 Tip:** Plugwright hooks into your build process and tests against your compiled plugin jar. Ensure your plugin compiles successfully (e.g. `jar` or `shadowJar` task) before running tests!
 
 > **💡 Want to see a working example?** Check out the [example_plugin](./example_plugin) directory in this repository.
-
-## Testing against more than one server
-
-The block above describes a single local Paper server, which is all most projects need. When you also want to run the same suite against a staging server someone else keeps running, name the servers explicitly:
-
-```kotlin
-import me.drownek.plugwright.api.secret
-import me.drownek.plugwright.external.ExternalMode
-import me.drownek.plugwright.local.LocalMode
-
-plugwright {
-    testsDir.set(file("src/test/e2e"))
-
-    environments {
-        create("local", LocalMode) {
-            minecraftVersion.set("1.21.11")
-            acceptEula.set(true)
-        }
-
-        create("staging", ExternalMode) {
-            host.set("mc.example.com")
-            minecraftVersion.set("1.20.4")
-
-            console { rcon { port.set(25575); password.set(secret.env("RCON_PASSWORD")) } }
-            accounts {
-                autoRegister {
-                    usernamePattern.set("pw_%04d")
-                    password.set(secret.env("BOT_PASSWORD"))
-                    max.set(4)
-                }
-            }
-            plugins { npm("@plugwright/auth-authme") }
-        }
-    }
-}
-```
-
-`./gradlew plugwrightTest` runs the matrix and prints a summary per environment; `./gradlew plugwrightTestStaging` runs one. A server behind a login wall needs a runner plugin to get past it, and `@plugwright/auth-authme` is the reference implementation for AuthMe-style login. Writing your own kind of environment — a proxy, a Compose stack — is a Kotlin mode plus an npm package.
-
-- [Project layout](https://plugwright.dev/project-layout) — where specs, plugins and generated files live
-- [Environments](https://plugwright.dev/environments) — modes, tasks, the matrix
-- [External servers](https://plugwright.dev/external-servers) — console channels, account pools, cleanup
-- [Runner plugins](https://plugwright.dev/plugins) — hooks, fixtures, matchers, inherited tests
-- [Writing a mode](https://plugwright.dev/custom-modes)
 
 ## Why Plugwright vs MockBukkit?
 
