@@ -108,6 +108,11 @@ Compiled specs land in `dist`, and everything an environment writes — the Pape
 
 ## Why Plugwright vs MockBukkit?
 
+**MockBukkit** is built for fast unit testing with simulated API mocks. **Plugwright** spins up a real Paper server with real Mineflayer bots for true end-to-end integration, GUIs, packets, and NMS.
+
+<details>
+<summary><strong>Feature Comparison Table</strong></summary>
+
 |                          | **Plugwright**                                              | **MockBukkit**                                                             |
 |--------------------------|-------------------------------------------------------------|----------------------------------------------------------------------------|
 | **Approach**             | End-to-end – runs a real Paper server with real player bots | Unit testing – mocks the Bukkit API in-process                             |
@@ -115,12 +120,14 @@ Compiled specs land in `dist`, and everything an environment writes — the Pape
 | **Player interaction**   | Real Mineflayer bots that join, move, chat, and click GUIs  | Mocked `Player` objects with simulated method calls                        |
 | **NMS / internals**      | ✅ Full support – real server means real NMS                 | ❌ Breaks on NMS / reflection / internals                                   |
 | **Plugin compatibility** | Tests the plugin exactly as players experience it           | May miss bugs caused by mock/real behavior mismatch                        |
-| **Multi-plugin testing** | ✅ All plugins load together naturally                       | Limited – each mock is isolated                                            |
+| **Multi-plugin testing** | ✅ All plugins load together naturally                      | Limited – each mock is isolated                                            |
 | **GUI testing**          | ✅ First-class support with locators and click simulation    | Partial – inventory content mocks supported; click/drag simulation limited |
 | **Speed**                | Slower (server startup ~10-20s, then fast)                  | Very fast (milliseconds per test)                                          |
 | **Best for**             | Integration & E2E tests, NMS-heavy plugins, GUI testing     | Fast unit tests for pure Bukkit API logic                                  |
 
 > **💡 Tip:** Plugwright and MockBukkit work well together. MockBukkit for fast unit tests; Plugwright for end-to-end tests that verify behavior on a real server.
+
+</details>
 
 ## Continuous Integration (CI)
 
