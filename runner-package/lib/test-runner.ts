@@ -297,6 +297,9 @@ export async function runConcurrentTestCase(params: RunTestCaseParams & { concur
  * test after it is reported skipped rather than failed, because what they were written against
  * is a state the block never reached. Plugin `beforeEach`/`afterEach` wrap the block, not each
  * test: a plugin that resets an account between tests would undo what the block is built on.
+ * The block's own `afterAll` hooks run once after the last executed test, before the plugins'
+ * `afterEach` and before the bot disconnects — but only if a test actually ran; a block that
+ * never got its player has nothing to clean up.
  */
 export async function runSerialBlock(params: RunSerialBlockParams): Promise<TestResult[]> {
     const { file, block, session, plugins, connOpts, timeoutMs, pluginName = null, instance } = params;
@@ -392,7 +395,16 @@ export async function runSerialBlock(params: RunSerialBlockParams): Promise<Test
             }
         }
     } finally {
-        if (lastCtx) await plugins.afterEach(lastCtx);
+        if (lastCtx) {
+            for (const hook of [...block.afterAllHooks].reverse()) {
+                try {
+                    await hook(lastCtx);
+                } catch (error) {
+                    console.error(pc.red(`[serial ${block.name}] afterAll error: ${(error as Error).message}`));
+                }
+            }
+            await plugins.afterEach(lastCtx);
+        }
         await bots.close();
     }
 

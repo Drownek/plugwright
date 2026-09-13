@@ -61,6 +61,9 @@ export interface SerialBlock {
     requires: RequiresMap;
     environments: string[] | null;
     concurrency: number;
+    /** Registered via `afterAll()`, run once per instance of this block — after its last
+     *  executed test, whatever became of the rest. See `afterAll` below. */
+    afterAllHooks: Hook[];
 }
 
 export type RegistryItem =
@@ -159,7 +162,10 @@ function describeImpl(label: string, fn: () => void): void {
  *
  * Plugin `beforeEach`/`afterEach` run once around the block, not around each test in it: a
  * plugin that resets an account between tests would undo exactly what the block is built on.
- * `beforeEach`/`afterEach` declared in the spec still run for every test.
+ * `beforeEach`/`afterEach` declared in the spec still run for every test. `afterAll()` also
+ * runs once, after the block's last executed test — including when the block stopped early
+ * and skipped the rest — so it is the right place for cleanup that must happen once no matter
+ * how the block ended. See `afterAll` below.
  */
 function serialImpl(label: string, optionsOrFn: SerialOptions | (() => void), maybeFn?: () => void): void {
     const options = typeof optionsOrFn === 'function' ? {} : optionsOrFn;
@@ -177,6 +183,7 @@ function serialImpl(label: string, optionsOrFn: SerialOptions | (() => void), ma
         requires: options.requires ?? {},
         environments: options.environments ?? null,
         concurrency: normalizeConcurrency(options.concurrency),
+        afterAllHooks: [],
     };
 
     currentBlock = block;
@@ -205,4 +212,21 @@ export function beforeEach(hook: Hook): void {
 
 export function afterEach(hook: Hook): void {
     scopeStack[scopeStack.length - 1].afterHooks.push(hook);
+}
+
+/** Registers a hook that runs exactly once per instance of the enclosing `describe.serial`
+ *  block, after its last executed test — whether the block finished all its tests, stopped
+ *  early on a failure/timeout/`invalidatePlayer`, or a test in it was skipped. Unlike
+ *  `afterEach`, it is not called at all if the block never got its player (the initial connect
+ *  failed) — nothing ran, so there is nothing to clean up.
+ *
+ *  Only valid inside `describe.serial`: a plain `describe`/`test` has no single
+ *  block-completion moment to hang this on, since every test there gets its own bot and runs
+ *  independently. A throwing hook is logged, never fatal — it must not flip an otherwise
+ *  passing block into a failure. */
+export function afterAll(hook: Hook): void {
+    if (!currentBlock) {
+        throw new Error('afterAll: only valid inside describe.serial — a plain describe/test has no single block-completion event to run it on');
+    }
+    currentBlock.afterAllHooks.push(hook);
 }
