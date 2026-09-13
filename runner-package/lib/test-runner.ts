@@ -335,7 +335,7 @@ export async function runSerialBlock(params: RunSerialBlockParams): Promise<Test
                 console.log(pc.dim(`  Test: ${testCase.name} - SKIPPED (${stopReason})`) + formatInstanceTag(instance));
                 results.push({
                     file, testName: testCase.name, passed: true, durationMs: 0, skipped: true,
-                    skipReason: stopReason, plugin: pluginName,
+                    skipReason: stopReason, plugin: pluginName, botUsername: player.username,
                 });
                 continue;
             }
@@ -444,6 +444,8 @@ function aggregateInstances(results: TestResult[]): TestResult {
             passed: r.passed,
             durationMs: r.durationMs,
             error: r.error,
+            skipped: r.skipped,
+            skipReason: r.skipReason,
         })),
     };
 }

@@ -16,7 +16,7 @@ build/reports/plugwright/<env>.log         per-environment output, matrix runs o
 ```json
 {
   "environment": "staging",
-  "summary": { "total": 47, "passed": 33, "failed": 0, "skipped": 14, "durationMs": 152340 },
+  "summary": { "total": 47, "passed": 33, "failed": 0, "skipped": 14, "skippedInstances": 0, "durationMs": 152340 },
   "tests": [
     {
       "file": "…/dist/commands.spec.js",
@@ -61,14 +61,18 @@ A test (or block) run with [`concurrency`](/writing-tests) still gets one entry,
   "plugin": null,
   "botUsername": null,
   "instances": [
-    { "index": 1, "botUsername": "pw_a1", "passed": true, "durationMs": 640, "error": null },
-    { "index": 2, "botUsername": "pw_b2", "passed": false, "durationMs": 812, "error": "Expected message matching \"Claimed\" not received" },
-    { "index": 3, "botUsername": "pw_c3", "passed": true, "durationMs": 701, "error": null }
+    { "index": 1, "botUsername": "pw_a1", "passed": true, "durationMs": 640, "error": null, "skipped": false, "skipReason": null },
+    { "index": 2, "botUsername": "pw_b2", "passed": false, "durationMs": 812, "error": "Expected message matching \"Claimed\" not received", "skipped": false, "skipReason": null },
+    { "index": 3, "botUsername": "pw_c3", "passed": true, "durationMs": 0, "error": null, "skipped": true, "skipReason": "serial block \"claims\" stopped at \"only one player can claim the chest\"" }
   ]
 }
 ```
 
 `instances` is `null` for an ordinary, non-concurrent test — `botUsername` on the row itself is where its bot lives instead. The JUnit report doesn't carry this breakdown; it only ever sees the one aggregated pass/fail/duration, so read the JSON report when a concurrent test fails.
+
+Read `skipped` before `passed`. Instances of a `describe.serial` block diverge: one whose earlier test failed stops there, and every position after it is recorded with `passed: true` and `durationMs: 0` without having run. Counting those as passes is how a block that broke on three of ten bots comes out looking like seven-out-of-ten coverage.
+
+The row's own `status` is `skip` only when *every* instance skipped, so `summary.skipped` misses instance-level skips entirely. `summary.skippedInstances` counts them across the whole run; the console summary prints the same number next to `Skipped`.
 
 ## JUnit XML
 

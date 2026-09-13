@@ -37,6 +37,12 @@ export interface TestInstanceResult {
     passed: boolean;
     durationMs: number;
     error?: Error;
+    /** Set when this instance never ran the test: its serial block stopped at an earlier one,
+     *  so nothing here was exercised. Check it before `passed` — a skip carries `passed: true`
+     *  and `durationMs: 0`, which on its own is indistinguishable from an instant pass. */
+    skipped?: boolean;
+    /** Why this instance skipped, copied from the block's stop reason. */
+    skipReason?: string;
 }
 
 export interface TestResult {
