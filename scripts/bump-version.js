@@ -100,6 +100,22 @@ async function main() {
         );
     }
 
+    // bump version references in source files (docs only for stable releases).
+    // Must run BEFORE the lockfile refresh below: it rewrites auth-authme-package's
+    // package.json peerDependencies range for @plugwright/runner, and npm copies that
+    // range into the lockfile during install. Refreshing lockfiles first would bake in
+    // the pre-bump peerDependencies range.
+    const changedSourceFiles = [
+        "example_plugin/build.gradle.kts",
+    ];
+    bumpVersionFiles(newVersion, isPrerelease);
+    if (!isPrerelease) {
+        changedSourceFiles.push(
+            "README.md",
+            "docs/quickstart.mdx",
+        );
+    }
+
     // Refresh every lockfile that records the runner's version rather than its own.
     //
     // The plugin packages depend on the runner through `file:../runner-package`, and npm
@@ -116,18 +132,6 @@ async function main() {
         execSync(
             `npm install --package-lock-only`,
             { cwd: dir, stdio: "inherit" }
-        );
-    }
-
-    // bump version references in source files (docs only for stable releases)
-    const changedSourceFiles = [
-        "example_plugin/build.gradle.kts",
-    ];
-    bumpVersionFiles(newVersion, isPrerelease);
-    if (!isPrerelease) {
-        changedSourceFiles.push(
-            "README.md",
-            "docs/quickstart.mdx",
         );
     }
 
