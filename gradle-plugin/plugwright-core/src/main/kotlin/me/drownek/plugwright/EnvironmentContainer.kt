@@ -12,7 +12,7 @@ import org.gradle.api.model.ObjectFactory
  * environments are created once while the build script is evaluated and read back once in
  * `afterEvaluate`, so the extra machinery of a live domain object container buys nothing here.
  */
-class EnvironmentContainer(private val objects: ObjectFactory) {
+open class EnvironmentContainer(private val objects: ObjectFactory) {
 
     class Entry(val spec: EnvironmentSpec, val mode: PlugwrightMode<*>)
 

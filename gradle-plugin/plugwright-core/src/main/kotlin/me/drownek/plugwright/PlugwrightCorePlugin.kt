@@ -42,7 +42,8 @@ const val DEFAULT_ENVIRONMENT_NAME = "local"
  */
 class PlugwrightCorePlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val extension = project.extensions.create("plugwright", PlugwrightExtension::class.java, project)
+        val extension = project.extensions.findByType(PlugwrightExtension::class.java)
+            ?: project.extensions.create("plugwright", PlugwrightExtension::class.java, project)
 
         // Shared per-user cache so Node.js is downloaded once for all projects
         // and survives 'gradle clean'. Safe for concurrent builds thanks to the

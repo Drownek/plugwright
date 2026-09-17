@@ -1,6 +1,4 @@
 import me.drownek.plugwright.api.secret
-import me.drownek.plugwright.external.ExternalMode
-import me.drownek.plugwright.local.LocalMode
 
 plugins {
     `java-library`
@@ -28,7 +26,7 @@ plugwright {
 
     environments {
         // Paper downloaded, patched, started and killed by plugwright itself.
-        create("local", LocalMode) {
+        local {
             minecraftVersion.set(mcVersion)
             acceptEula.set(true)
             // No runDir: the server goes to src/test/e2e/generated/local/run, which is where
@@ -99,7 +97,7 @@ plugwright {
         // src/test/e2e/generated/local/run, still up when the tests connect, still up after
         // they finish (the local environment left it there). Out of the
         // default matrix because it needs that server to be running.
-        create("stand", ExternalMode) {
+        external("stand") {
             host.set("localhost")
             port.set(25565)
             minecraftVersion.set(mcVersion)

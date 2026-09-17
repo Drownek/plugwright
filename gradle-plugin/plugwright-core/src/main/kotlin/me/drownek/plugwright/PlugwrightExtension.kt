@@ -39,16 +39,11 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
     /**
      * Mode registry and declared environments. See [registerMode] and [environments].
      */
-    val environments: EnvironmentContainer = EnvironmentContainer(project.objects)
+    open val environments: EnvironmentContainer = EnvironmentContainer(project.objects)
 
     /** Registers a [PlugwrightMode] so [environments] can create environments of its spec type. */
     fun registerMode(mode: PlugwrightMode<*>) {
         environments.registerMode(mode)
-    }
-
-    /** Declares the environments tests can run against. */
-    fun environments(action: EnvironmentContainer.() -> Unit) {
-        environments.action()
     }
 
     /** Settings for `plugwrightTest`'s multi-environment matrix run. See [matrix]. */
@@ -78,15 +73,15 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
     // Pre-3.0 shape: describes a single implicit "local" environment. Still read whenever
     // the build script has no environments { } block — see PlugwrightMode.applyLegacyDefaults.
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { minecraftVersion.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { minecraftVersion.set(...) } }")
     override val minecraftVersion: Property<String> = project.objects.property(String::class.java).convention("1.19.4")
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { jvmArgs.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { jvmArgs.set(...) } }")
     override val jvmArgs: ListProperty<String> = project.objects.listProperty(String::class.java).convention(
         listOf("-Xmx2G")
     )
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { acceptEula.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { acceptEula.set(...) } }")
     override val acceptEula: Property<Boolean> = project.objects.property(Boolean::class.java).convention(true)
 
     /**
@@ -94,21 +89,21 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
      * under `<testsDir>/generated/<environment>/run`. Setting it here is still honoured, and
      * still means "this exact directory".
      */
-    @Deprecated("Use environments { create(\"local\", LocalMode) { runDir.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { runDir.set(...) } }")
     override val runDir: DirectoryProperty = project.objects.directoryProperty()
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { cleanExcludePatterns.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { cleanExcludePatterns.set(...) } }")
     override val cleanExcludePatterns: ListProperty<String> = project.objects.listProperty(String::class.java).convention(
         listOf("server.jar", ".minecraft-version", "cache", "libraries")
     )
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { downloadPlugins { ... } } }")
+    @Deprecated("Use environments { local(\"local\") { downloadPlugins { ... } } }")
     override val pluginUrls: ListProperty<String> = project.objects.listProperty(String::class.java).convention(emptyList())
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { useExternalPluginsOnly.set(...) } }")
+    @Deprecated("Use environments { local(\"local\") { useExternalPluginsOnly.set(...) } }")
     override val useExternalPluginsOnly: Property<Boolean> = project.objects.property(Boolean::class.java).convention(false)
 
-    @Deprecated("Use environments { create(\"local\", LocalMode) { writeFiles { ... } } }")
+    @Deprecated("Use environments { local(\"local\") { writeFiles { ... } } }")
     override val runDirFiles: ListProperty<RunDirFile> = project.objects.listProperty(RunDirFile::class.java).convention(emptyList())
 
     /**
@@ -116,7 +111,7 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
      *
      * Paths are relative to the run directory.
      */
-    @Deprecated("Use environments { create(\"local\", LocalMode) { writeFiles { ... } } }")
+    @Deprecated("Use environments { local(\"local\") { writeFiles { ... } } }")
     fun writeFiles(action: RunDirFileSpec.() -> Unit) {
         val spec = RunDirFileSpec()
         action(spec)
@@ -143,7 +138,7 @@ abstract class PlugwrightExtension(project: Project) : LegacyEnvironmentProperti
     /**
      * DSL method for configuring plugin downloads.
      */
-    @Deprecated("Use environments { create(\"local\", LocalMode) { downloadPlugins { ... } } }")
+    @Deprecated("Use environments { local(\"local\") { downloadPlugins { ... } } }")
     fun downloadPlugins(action: PluginDownloadSpec.() -> Unit) {
         val spec = PluginDownloadSpec()
         action(spec)
