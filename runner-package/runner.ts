@@ -12,6 +12,7 @@ import { skipReasonForOptions } from './lib/skip-reason.js';
 import { LocalEnvironment } from './lib/environments/local.js';
 import { externalEnvironment } from './lib/environments/external.js';
 import { PlayerWrapper } from './lib/player.js';
+import { ServerWrapper } from './lib/server.js';
 import { printTestSummary, writeJsonReport, writeJUnitReport } from './lib/reporter.js';
 import { loadRunnerConfig } from './lib/config.js';
 import { importOptionalPackage } from './lib/utils.js';
@@ -357,7 +358,8 @@ export async function runPingSession(config: RunnerConfig = loadRunnerConfig()):
                     profilesFolder: account.microsoftCacheDir,
                 };
                 const bot = session.createBot({ ...botOptions, username: account.username });
-                const player = new PlayerWrapper(bot, session);
+                const server = new ServerWrapper(session);
+                const player = new PlayerWrapper(bot, session, server);
                 player._captureSpawnPromise();
                 player._setBotOptions(botOptions);
                 player._setAccount(account);

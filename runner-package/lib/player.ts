@@ -26,15 +26,16 @@ export class PlayerWrapper {
     }
 
     gui!: (options: { title: string | RegExp; timeout?: number }) => Promise<LiveGuiHandle>;
-    private serverWrapper?: ServerWrapper;
+    private readonly serverWrapper: ServerWrapper;
     private _botOptions?: BotConnectionOptions;
     private _spawnPromise: Promise<void> | null = null;
     private _listenersBot: Bot | null = null;
     private _account?: Account;
 
-    constructor(bot: Bot, session: Session) {
+    constructor(bot: Bot, session: Session, serverWrapper: ServerWrapper) {
         this.bot = bot;
         this.session = session;
+        this.serverWrapper = serverWrapper;
         this._bindExtensions(bot);
     }
 
@@ -176,10 +177,6 @@ export class PlayerWrapper {
         });
     }
 
-    setServerWrapper(server: ServerWrapper): void {
-        this.serverWrapper = server;
-    }
-
     getCurrentGui(): GuiWrapper | null {
         let currentWindow = this.bot.currentWindow;
         return currentWindow ? new GuiWrapper(this.bot, currentWindow as Window) : null;
@@ -240,24 +237,21 @@ export class PlayerWrapper {
     }
 
     async makeOp(): Promise<void> {
-        this.requireServer();
-        const response = await this.serverWrapper!.execute(`minecraft:op ${this.username}`);
+        const response = await this.serverWrapper.execute(`minecraft:op ${this.username}`);
         if (!/operator/i.test(response) && !/nothing changed/i.test(response)) {
             throw new Error(`Player ${this.username} was not opped: ${response.trim() || 'no response from the console'}`);
         }
     }
 
     async deOp(): Promise<void> {
-        this.requireServer();
-        await this.serverWrapper!.execute(`minecraft:deop ${this.username}`);
+        await this.serverWrapper.execute(`minecraft:deop ${this.username}`);
     }
 
     async setGameMode(mode: 'survival' | 'creative' | 'adventure' | 'spectator'): Promise<void> {
         if (this.bot.game.gameMode === mode) {
             return;
         }
-        this.requireServer();
-        await this.serverWrapper!.execute(`minecraft:gamemode ${mode} ${this.username}`);
+        await this.serverWrapper.execute(`minecraft:gamemode ${mode} ${this.username}`);
 
         await poll(
             () => this.bot.game.gameMode === mode ? true : undefined,
@@ -266,8 +260,7 @@ export class PlayerWrapper {
     }
 
     async teleport(x: number, y: number, z: number): Promise<void> {
-        this.requireServer();
-        await this.serverWrapper!.execute(`minecraft:tp ${this.username} ${x} ${y} ${z}`);
+        await this.serverWrapper.execute(`minecraft:tp ${this.username} ${x} ${y} ${z}`);
 
         await poll(
             () => {
@@ -324,8 +317,7 @@ export class PlayerWrapper {
     }
 
     async giveItem(item: string, count: number = 1): Promise<void> {
-        this.requireServer();
-        await this.serverWrapper!.execute(`minecraft:give ${this.username} ${item} ${count}`);
+        await this.serverWrapper.execute(`minecraft:give ${this.username} ${item} ${count}`);
 
         await poll(
             () => {
@@ -348,13 +340,12 @@ export class PlayerWrapper {
         itemOrOptions?: string | { timeout?: number },
         options: { timeout?: number } = {}
     ): Promise<void> {
-        this.requireServer();
         const item = typeof itemOrOptions === 'string' ? itemOrOptions : undefined;
         const opts = typeof itemOrOptions === 'object' ? itemOrOptions : options;
         const timeout = opts.timeout ?? 5000;
 
         if (item) {
-            await this.serverWrapper!.execute(`minecraft:clear ${this.username} ${item}`);
+            await this.serverWrapper.execute(`minecraft:clear ${this.username} ${item}`);
             await waitUntil(
                 () => !this.bot.inventory.items().some(i => i.name.includes(item)),
                 {
@@ -363,7 +354,7 @@ export class PlayerWrapper {
                 }
             );
         } else {
-            await this.serverWrapper!.execute(`minecraft:clear ${this.username}`);
+            await this.serverWrapper.execute(`minecraft:clear ${this.username}`);
             await waitUntil(
                 () => this.bot.inventory.items().length === 0,
                 {
@@ -371,12 +362,6 @@ export class PlayerWrapper {
                     timeout,
                 }
             );
-        }
-    }
-
-    private requireServer(): void {
-        if (!this.serverWrapper) {
-            throw new Error('ServerWrapper not set on PlayerWrapper');
         }
     }
 }

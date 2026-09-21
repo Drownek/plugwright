@@ -104,9 +104,8 @@ function createBotScope(session: Session, server: ServerWrapper, connOpts: BotCo
             };
             const bot = session.createBot({ ...botOptions, username: botUsername });
             ownBots.push(bot);
-            const player = new PlayerWrapper(bot, session);
+            const player = new PlayerWrapper(bot, session, server);
             player._captureSpawnPromise();
-            player.setServerWrapper(server);
             player._setBotOptions(botOptions);
             player._setAccount(account);
 
