@@ -3,7 +3,7 @@ import { join, basename } from 'path';
 import { pathToFileURL } from 'url';
 import { install as installSourceMapSupport } from 'source-map-support';
 import pc from 'picocolors';
-import { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator } from './lib/wrappers.js';
+import { ItemWrapper, LiveGuiHandle, GuiItemLocator } from './lib/wrappers.js';
 import { testRegistry, resetRegistry } from './lib/test-registry.js';
 import { Session } from './lib/session.js';
 import { PluginHost } from './lib/plugin-host.js';
@@ -27,7 +27,7 @@ import type { Account, AccountPool } from './lib/account.js';
 installSourceMapSupport();
 
 // Re-export public API
-export { ItemWrapper, GuiWrapper, LiveGuiHandle, GuiItemLocator };
+export { ItemWrapper, LiveGuiHandle, GuiItemLocator };
 export { PlayerWrapper };
 export { ServerWrapper } from './lib/server.js';
 export { test, describe, beforeEach, afterEach, afterAll } from './lib/test-registry.js';

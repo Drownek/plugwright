@@ -361,14 +361,7 @@ export class ItemWrapper {
     }
 }
 
-/**
- * @internal
- * @deprecated GuiWrapper is primarily for internal use. Use LiveGuiHandle and GuiItemLocator for new code.
- *
- * GuiWrapper represents a snapshot of a GUI at a specific point in time.
- * For live, reactive GUI interactions, use `player.gui({ title })` which returns a LiveGuiHandle.
- */
-export class GuiWrapper {
+class GuiWrapper {
     bot: Bot;
     window: Window;
     title: string;

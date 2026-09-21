@@ -1,5 +1,5 @@
 import { Bot } from 'mineflayer';
-import { ItemWrapper, GuiWrapper, createPlayerExtensions, Window, LiveGuiHandle } from './wrappers.js';
+import { ItemWrapper, createPlayerExtensions, Window, LiveGuiHandle } from './wrappers.js';
 import { ServerWrapper } from './server.js';
 import type { Session } from './session.js';
 import { MessageBuffer } from './session.js';
@@ -177,10 +177,6 @@ export class PlayerWrapper {
         });
     }
 
-    getCurrentGui(): GuiWrapper | null {
-        let currentWindow = this.bot.currentWindow;
-        return currentWindow ? new GuiWrapper(this.bot, currentWindow as Window) : null;
-    }
 
     /**
      * Sends a chat message as this bot.
