@@ -1,6 +1,6 @@
 # Plugwright
 
-[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/io.github.drownek.plugwright?label=Gradle%20Plugin%20Portal)](https://plugins.gradle.org/plugin/io.github.drownek.plugwright)
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/io.github.drownek.plugwright?filter=!*dev*&label=Gradle%20Plugin%20Portal)](https://plugins.gradle.org/plugin/io.github.drownek.plugwright)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/Drownek/plugwright/actions/workflows/ci.yml/badge.svg)](https://github.com/Drownek/plugwright/actions/workflows/ci.yml)
 [![Read The Docs](https://img.shields.io/badge/Docs-Read_Here-007EC6?logo=readthedocs&logoColor=white)](https://plugwright.dev)
@@ -144,6 +144,16 @@ Plugwright provides an official GitHub Action to run your end-to-end suite on ev
 <strong><a href="https://holyworld.io/">HolyWorld</a></strong> <br>
 ~10,000 peak online players. Plugwright powers their CI/CD pipeline for end-to-end plugin testing. <br>
 <em>Integrated by <a href="https://github.com/monikon22">@monikon22</a></em>
+
+<br clear="both"/>
+<br>
+
+<a href="https://hothawk.net/">
+  <img align="left" src="https://github.com/user-attachments/assets/a00f0a9b-7e29-487e-80b6-87e59ad298d5" width="80" alt="HotHawk Logo" style="margin-right: 15px;">
+</a>
+
+<strong><a href="https://hothawk.net/">HotHawk</a></strong> <br>
+~300 peak online players. Runs comprehensive test suites for server features and custom plugins.<br>
 
 <br clear="both"/>
 
