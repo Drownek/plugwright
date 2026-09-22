@@ -3,15 +3,12 @@ import { resolveSecret } from './config.js';
 import type { SecretRef } from './config.js';
 
 /**
- * A bot's login identity as seen by an environment and its auth plugin. `justCreated` is
- * the key field for authentication plugins: a fresh account needs to register, an existing
- * one needs to log in.
+ * A bot's login identity as seen by an environment and its auth plugin.
  */
 export interface Account {
     username: string;
     password?: string;
     auth: 'offline' | 'microsoft';
-    justCreated: boolean;
     /** Set for `microsoft` accounts: where mineflayer should cache the device-code token. */
     microsoftCacheDir?: string;
 }
@@ -25,7 +22,7 @@ export interface Account {
  * plugin to use.
  */
 export function syntheticAccount(username: string, password?: string): Account {
-    return { username, password, auth: 'offline', justCreated: true };
+    return { username, password, auth: 'offline' };
 }
 
 /** A short random identity suffix. Four hex digits: long enough that two names in a run
@@ -96,14 +93,13 @@ export class AccountPool {
     constructor(config: AccountsConfig | null | undefined) {
         for (const entry of config?.pool ?? []) {
             this.declaredNames.add(entry.username);
-            this.queue.push({ username: entry.username, secret: entry.password, auth: 'offline', justCreated: false });
+            this.queue.push({ username: entry.username, secret: entry.password, auth: 'offline' });
         }
         for (const username of config?.microsoft?.accounts ?? []) {
             this.declaredNames.add(username);
             this.queue.push({
                 username,
                 auth: 'microsoft',
-                justCreated: false,
                 microsoftCacheDir: config?.microsoft?.cacheDir ?? undefined,
             });
         }
@@ -145,7 +141,7 @@ export class AccountPool {
             this.autoRegisterIssued++;
             const username = formatUsername(this.autoRegister.usernamePattern, this.autoRegisterIssued);
             if (this.autoRegister.unique) this.uniqueOut.add(username);
-            return { username, password: resolveSecret(this.autoRegister.password), auth: 'offline', justCreated: true };
+            return { username, password: resolveSecret(this.autoRegister.password), auth: 'offline' };
         }
 
         throw new Error(
@@ -166,15 +162,13 @@ export class AccountPool {
             : account;
     }
 
-    /** Returns a leased account, `finally`-style. A numbered `autoRegister` account comes back
-     *  with `justCreated: false` — the server registered it on its first lease, so the auth
-     *  plugin logs in on every lease after. A `%s` account is dropped instead: its name is spent,
-     *  and what comes back is only the slot it occupied. */
+    /** Returns a leased account, `finally`-style. A `%s` account is dropped instead: its name is
+     *  spent, and what comes back is only the slot it occupied. */
     release(account: Account): void {
         if (this.uniqueOut.delete(account.username)) {
             this.autoRegisterIssued--;
             return;
         }
-        this.queue.push(account.justCreated ? { ...account, justCreated: false } : account);
+        this.queue.push(account);
     }
 }

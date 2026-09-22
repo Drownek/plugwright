@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export interface AuthAuthmeOptions {
     /** Command sent for an existing account. */
     loginCommand?: string;
-    /** Command sent for a freshly generated account (`account.justCreated`); receives the
+    /** Command sent for a freshly generated account; receives the
      *  password twice, matching AuthMe's own `/register <pass> <pass>`. */
     registerCommand?: string;
     /** Regex (source only, case-insensitive) matched against server messages to detect the
@@ -111,11 +111,9 @@ export default definePlugin<AuthAuthmeOptions>({
         const sessionResumed = new RegExp(resolved.sessionResumedPattern, 'i');
         const successPattern = new RegExp(resolved.successPattern, 'i');
 
-        // Which of the two the server asks for is the server's decision, not ours:
-        // `account.justCreated` is a hint from the account pool, and it is wrong whenever a
-        // pool account outlives the run that created it. So wait for whichever of the three
-        // arrives and act on that. Register is tested first because AuthMe's register prompt
-        // names the password too, and would otherwise match the login pattern.
+        // Which of the two the server asks for is the server's decision. Wait for whichever of
+        // the three arrives and act on that. Register is tested first because AuthMe's register
+        // prompt names the password too, and would otherwise match the login pattern.
         //
         // Hardcoded to 0 rather than `player.getMessageBufferIndex()`: the login prompt can
         // arrive during the handshake, before this handler even runs, so reading the buffer

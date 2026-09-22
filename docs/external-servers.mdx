@@ -73,7 +73,7 @@ Declaring no channel at all is valid. The environment runs without a console, an
 A local server accepts any username; a stand usually does not. `accounts { }` builds a pool that tests lease from and return to, merged from three sources:
 
 - **`pool`** — accounts that already exist, with their passwords.
-- **`autoRegister`** — generated names from a pattern, marked `justCreated` on their first lease so an authentication plugin registers them instead of logging in. The pattern must start with `pw_`, so test accounts stay recognizable on a server full of real players. The placeholder decides what happens to a name afterwards: `pw_%04d` numbers a fixed set of accounts the run keeps coming back to, while `pw_%s` puts a random suffix there and never hands the same name out twice. See below.
+- **`autoRegister`** — generated names from a pattern, which an authentication plugin registers on their first lease instead of logging in. The pattern must start with `pw_`, so test accounts stay recognizable on a server full of real players. The placeholder decides what happens to a name afterwards: `pw_%04d` numbers a fixed set of accounts the run keeps coming back to, while `pw_%s` puts a random suffix there and never hands the same name out twice. See below.
 - **`microsoft`** — online-mode accounts. No password; mineflayer authenticates with a cached device-code token. Point `cacheDir` somewhere outside `build/`, and warm the cache before CI ever needs it, because the device-code flow is interactive.
 
 One account is leased per bot and returned in a `finally`, whatever the test did. When the pool is empty and `autoRegister` has hit `max`, `lease()` throws rather than hand the same identity to two connected bots.
