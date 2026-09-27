@@ -463,8 +463,8 @@ class PlugwrightCorePlugin : Plugin<Project> {
      * patch npm has never seen, and `^2.0.0` resolves to the newest 2.x either way.
      */
     private fun runnerVersionRange(): String {
-        val match = Regex("""^(\d+)\.(\d+)\.""").find(Banner.pluginVersion()) ?: return "latest"
-        val (major, minor) = match.destructured
-        return "^$major.$minor.0"
+        val version = Banner.pluginVersion()
+        val match = Regex("""^(\d+)\.(\d+)\.""").find(version) ?: return "latest"
+        return if (version.contains("-")) "^${match.groupValues[1]}.${match.groupValues[2]}.0" else "^$version"
     }
 }
