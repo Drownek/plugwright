@@ -200,6 +200,41 @@ export class Matchers<T = unknown> {
         );
     }
 
+    private _checkThrow(didThrow: boolean, thrownError: any, expected: string | RegExp | Function | undefined, isAsync: boolean): void {
+        const typeStr = isAsync ? 'async function' : 'function';
+        if (!didThrow) {
+            this._assert(false, '', `Expected ${typeStr} to throw an error, but it did not`);
+            return;
+        }
+
+        if (expected === undefined) {
+            this._assert(didThrow, `Expected ${typeStr} not to throw`, '');
+        } else {
+            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
+                ? String((thrownError as any).message)
+                : String(thrownError);
+            if (typeof expected === 'string') {
+                this._assert(
+                    message.includes(expected),
+                    `Expected error not to include "${expected}"`,
+                    `Expected error to include "${expected}", but got "${message}"`
+                );
+            } else if (expected instanceof RegExp) {
+                this._assert(
+                    expected.test(message),
+                    `Expected error not to match ${expected}`,
+                    `Expected error to match ${expected}, but got "${message}"`
+                );
+            } else if (typeof expected === 'function') {
+                this._assert(
+                    thrownError instanceof expected,
+                    `Expected error not to be instance of ${expected.name}`,
+                    `Expected error to be instance of ${expected.name}`
+                );
+            }
+        }
+    }
+
     toThrow(expected?: string | RegExp | Function): void {
         if (typeof this.actual !== 'function') {
             throw new AssertionError('Expected value to be a function');
@@ -215,38 +250,7 @@ export class Matchers<T = unknown> {
             thrownError = error;
         }
 
-        if (!didThrow) {
-            this._assert(false, '', 'Expected function to throw an error, but it did not');
-            return;
-        }
-
-        if (expected === undefined) {
-            this._assert(didThrow, 'Expected function not to throw', '');
-        } else if (typeof expected === 'string') {
-            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
-                ? String((thrownError as any).message)
-                : String(thrownError);
-            this._assert(
-                message.includes(expected),
-                `Expected error not to include "${expected}"`,
-                `Expected error to include "${expected}", but got "${message}"`
-            );
-        } else if (expected instanceof RegExp) {
-            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
-                ? String((thrownError as any).message)
-                : String(thrownError);
-            this._assert(
-                expected.test(message),
-                `Expected error not to match ${expected}`,
-                `Expected error to match ${expected}, but got "${message}"`
-            );
-        } else if (typeof expected === 'function') {
-            this._assert(
-                thrownError instanceof expected,
-                `Expected error not to be instance of ${expected.name}`,
-                `Expected error to be instance of ${expected.name}`
-            );
-        }
+        this._checkThrow(didThrow, thrownError, expected, false);
     }
 
     async toThrowAsync(expected?: string | RegExp | Function): Promise<void> {
@@ -264,38 +268,7 @@ export class Matchers<T = unknown> {
             thrownError = error;
         }
 
-        if (!didThrow) {
-            this._assert(false, '', 'Expected async function to throw an error, but it did not');
-            return;
-        }
-
-        if (expected === undefined) {
-            this._assert(didThrow, 'Expected async function not to throw', '');
-        } else if (typeof expected === 'string') {
-            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
-                ? String((thrownError as any).message)
-                : String(thrownError);
-            this._assert(
-                message.includes(expected),
-                `Expected error not to include "${expected}"`,
-                `Expected error to include "${expected}", but got "${message}"`
-            );
-        } else if (expected instanceof RegExp) {
-            const message = (thrownError && typeof thrownError === 'object' && 'message' in thrownError)
-                ? String((thrownError as any).message)
-                : String(thrownError);
-            this._assert(
-                expected.test(message),
-                `Expected error not to match ${expected}`,
-                `Expected error to match ${expected}, but got "${message}"`
-            );
-        } else if (typeof expected === 'function') {
-            this._assert(
-                thrownError instanceof expected,
-                `Expected error not to be instance of ${expected.name}`,
-                `Expected error to be instance of ${expected.name}`
-            );
-        }
+        this._checkThrow(didThrow, thrownError, expected, true);
     }
 
     toBeInstanceOf(expected: Function): void {
